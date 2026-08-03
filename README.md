@@ -13,3 +13,11 @@ The main objectives:
 - [ ] Integrate the stemmers with Tantivy.
 - [ ] Index the tipitika with Tantivy.
 - [ ] Create a command line interface to search the tipitika.
+
+# Instructions
+
+Download the Digital Pāli Dictionary here:
+
+https://github.com/digitalpalidictionary/dpd-db/releases/download/v0.4.20260728/dpd.db.tar.xz
+
+Extract the file into `data/`.
