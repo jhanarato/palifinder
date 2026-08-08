@@ -7,7 +7,7 @@ struct Stem {
 
 #[allow(dead_code)]
 fn get_stem(conn: &mut Connection, word: &str) -> Result<String> {
-    let stem = conn.query_row(
+    let stem = conn.query_one(
         "SELECT stem from dpd_headwords where lemma_1 == (?1)",
         [word],
         |row| Ok(Stem { stem: row.get(0)? })
