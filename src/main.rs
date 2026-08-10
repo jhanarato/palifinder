@@ -5,7 +5,6 @@ struct Stem {
     stem: String,
 }
 
-#[allow(dead_code)]
 fn get_stem(conn: &mut Connection, word: &str) -> Result<String> {
     let stem = conn.query_one(
         "SELECT stem from dpd_headwords where lemma_1 == (?1)",
@@ -16,19 +15,9 @@ fn get_stem(conn: &mut Connection, word: &str) -> Result<String> {
 }
 
 fn main() -> Result<()> {
-    let conn = Connection::open("data/dpd.db")?;
-    let mut stmt = conn.prepare("SELECT stem from dpd_headwords where lemma_1 == 'bhagavā'")?;
-    let stems = stmt.query_map([], |row| {
-        Ok(
-            Stem {
-                stem: row.get(0)?,
-            }
-        )
-    })?;
-
-    for stem in stems {
-        println!("Found stem {:?}", stem?.stem);
-    }
+    let mut conn = Connection::open("data/dpd.db")?;
+    let stem = get_stem(&mut conn, "bhagavā")?;
+    println!("Stem of bhagavā is {stem}");
     Ok(())
 }
 
