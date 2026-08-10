@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-use rusqlite::{Connection};
-use std::fs::{File};
-use std::io::BufReader;
 use anyhow::Result;
+use rusqlite::Connection;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 struct Stem {
@@ -23,11 +21,8 @@ fn main() -> Result<()> {
     let stem = get_stem(&mut conn, "bhagavā")?;
     println!("Stem of bhagavā is {stem}");
 
-    let file = File::open(
-        "/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json",
-    )?;
-    let reader = BufReader::new(file);
-    let segments: HashMap<String, String> = serde_json::from_reader(reader)?;
+    let file_data = std::fs::read_to_string("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json")?;
+    let segments: HashMap<String, String> = serde_json::from_str(file_data.as_str())?;
     for (uid, content) in segments {
         println!("Segment {uid} is {content}");
     }
