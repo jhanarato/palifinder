@@ -23,6 +23,16 @@ fn get_segments(content: &str) -> Result<Vec<String>> {
     Ok(segments)
 }
 
+fn tokenize(segment: &str) -> Vec<String> {
+    let mut tokenizer = WhitespaceTokenizer::default();
+    let mut stream = tokenizer.token_stream(segment);
+    let mut tokens = Vec::new();
+    while let Some(token) = stream.next() {
+        tokens.push(token.text.clone());
+    }
+    tokens
+}
+
 fn main() -> Result<()> {
     let mut conn = Connection::open("data/dpd.db")?;
     let stem = get_stem(&mut conn, "bhagavā")?;
@@ -30,11 +40,9 @@ fn main() -> Result<()> {
 
     let contents = std::fs::read_to_string("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json")?;
 
-    let mut tokenizer = WhitespaceTokenizer::default();
     for segment in get_segments(contents.as_str())? {
-        let mut stream = tokenizer.token_stream(segment.as_str());
-        while let Some(token) = stream.next() {
-            println!("{}", token.text);
+        for token in tokenize(segment.as_str()) {
+            println!("{token}");
         }
     }
 
