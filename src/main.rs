@@ -1,6 +1,7 @@
 use anyhow::Result;
 use rusqlite::Connection;
 use std::collections::BTreeMap;
+use tantivy::tokenizer::{TokenStream, Tokenizer, WhitespaceTokenizer};
 
 #[derive(Debug)]
 struct Stem {
@@ -29,9 +30,14 @@ fn main() -> Result<()> {
 
     let contents = std::fs::read_to_string("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json")?;
 
+    let mut tokenizer = WhitespaceTokenizer::default();
     for segment in get_segments(contents.as_str())? {
-        println!("{segment}");
+        let mut stream = tokenizer.token_stream(segment.as_str());
+        while let Some(token) = stream.next() {
+            println!("{}", token.text);
+        }
     }
+
     Ok(())
 }
 
