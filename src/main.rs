@@ -27,9 +27,10 @@ fn tokenize(segment: &str) -> Vec<String> {
     let mut tokenizer = WhitespaceTokenizer::default();
     let mut stream = tokenizer.token_stream(segment);
     let mut tokens = Vec::new();
-    while let Some(token) = stream.next() {
+    stream.process(&mut |token| {
         tokens.push(token.text.clone());
-    }
+    });
+
     tokens
 }
 
