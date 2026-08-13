@@ -1,6 +1,7 @@
 use anyhow::Result;
 use rusqlite::Connection;
 use std::collections::BTreeMap;
+use std::path::Path;
 use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
 
 #[derive(Debug)]
@@ -35,11 +36,11 @@ fn tokenize(segment: &str) -> Vec<String> {
 }
 
 fn main() -> Result<()> {
-    let mut conn = Connection::open("data/dpd.db")?;
+    let db_path = Path::new("data/dpd.db");
+    let sutta_path = Path::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json");
     
-    let contents = std::fs::read_to_string(
-        "/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json",
-    )?;
+    let mut conn = Connection::open(db_path)?;
+    let contents = std::fs::read_to_string(sutta_path)?;
 
     for segment in get_segments(contents.as_str())? {
         for token in tokenize(segment.as_str()) {
