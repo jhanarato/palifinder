@@ -36,6 +36,12 @@ fn tokenize(segment: &str) -> Vec<String> {
     tokens
 }
 
+fn is_pali_root_text_file(path: &Path) -> Result<bool> {
+    if !path.metadata()?.is_file() { return Ok(false) }
+    if path.file_stem().unwrap().to_str().unwrap().ends_with("root-pli-ms") { return Ok(true) }
+    Ok(false)
+}
+
 fn main() -> Result<()> {
     let db_path = Path::new("data/dpd.db");
     let sutta_path = Path::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json");
@@ -56,7 +62,7 @@ fn main() -> Result<()> {
     WalkDir::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms")
         .into_iter()
         .filter_map(Result::ok)
-        .filter(|e| e.metadata().unwrap().is_file())
+        .filter(|e| is_pali_root_text_file(e.path()).expect("Not a Pali file."))
         .for_each(|e| println!("{}", e.path().display()));
 
     Ok(())
