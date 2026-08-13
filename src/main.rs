@@ -1,7 +1,7 @@
 use anyhow::Result;
 use rusqlite::Connection;
 use std::collections::BTreeMap;
-use tantivy::tokenizer::{TokenStream, Tokenizer, WhitespaceTokenizer};
+use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
 
 #[derive(Debug)]
 struct Stem {
@@ -24,7 +24,7 @@ fn get_segments(content: &str) -> Result<Vec<String>> {
 }
 
 fn tokenize(segment: &str) -> Vec<String> {
-    let mut tokenizer = WhitespaceTokenizer::default();
+    let mut tokenizer = SimpleTokenizer::default();
     let mut stream = tokenizer.token_stream(segment);
     let mut tokens = Vec::new();
     stream.process(&mut |token| {
@@ -39,11 +39,17 @@ fn main() -> Result<()> {
     let stem = get_stem(&mut conn, "bhagavā")?;
     println!("Stem of bhagavā is {stem}");
 
-    let contents = std::fs::read_to_string("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json")?;
+    let contents = std::fs::read_to_string(
+        "/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json",
+    )?;
 
     for segment in get_segments(contents.as_str())? {
         for token in tokenize(segment.as_str()) {
-            println!("{token}");
+            let stem = get_stem(&mut conn, token.as_str());
+            match stem {
+                Ok(stem) => println!("{token} {stem}"),
+                Err(_) => println!("{token} NA"),
+            }
         }
     }
 
