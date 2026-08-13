@@ -3,6 +3,7 @@ use rusqlite::Connection;
 use std::collections::BTreeMap;
 use std::path::Path;
 use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
+use walkdir::WalkDir;
 
 #[derive(Debug)]
 struct Stem {
@@ -38,7 +39,7 @@ fn tokenize(segment: &str) -> Vec<String> {
 fn main() -> Result<()> {
     let db_path = Path::new("data/dpd.db");
     let sutta_path = Path::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json");
-    
+
     let mut conn = Connection::open(db_path)?;
     let contents = std::fs::read_to_string(sutta_path)?;
 
@@ -51,6 +52,12 @@ fn main() -> Result<()> {
             }
         }
     }
+
+    WalkDir::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms")
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|e| e.metadata().unwrap().is_file())
+        .for_each(|e| println!("{}", e.path().display()));
 
     Ok(())
 }
