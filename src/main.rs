@@ -36,9 +36,7 @@ fn tokenize(segment: &str) -> Vec<String> {
 
 fn main() -> Result<()> {
     let mut conn = Connection::open("data/dpd.db")?;
-    let stem = get_stem(&mut conn, "bhagavā")?;
-    println!("Stem of bhagavā is {stem}");
-
+    
     let contents = std::fs::read_to_string(
         "/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json",
     )?;
