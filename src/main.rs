@@ -28,6 +28,12 @@ fn get_files(location: &Path) -> impl Iterator<Item=PathBuf> {
         .map(DirEntry::into_path)
 }
 
+fn is_pali_root_text_file(path: &Path) -> Result<bool> {
+    if !path.metadata()?.is_file() { return Ok(false) }
+    if path.file_stem().unwrap().to_str().unwrap().ends_with("root-pli-ms") { return Ok(true) }
+    Ok(false)
+}
+
 fn get_segments(content: &str) -> Result<Vec<String>> {
     let entries: BTreeMap<String, String> = serde_json::from_str(content)?;
     let segments: Vec<String> = entries.values().cloned().collect();
@@ -45,15 +51,8 @@ fn tokenize(segment: &str) -> Vec<String> {
     tokens
 }
 
-fn is_pali_root_text_file(path: &Path) -> Result<bool> {
-    if !path.metadata()?.is_file() { return Ok(false) }
-    if path.file_stem().unwrap().to_str().unwrap().ends_with("root-pli-ms") { return Ok(true) }
-    Ok(false)
-}
-
-fn main() -> Result<()> {
+fn vocabulary(pali_dir: &Path) -> Result<HashSet<String>> {
     let mut vocabulary: HashSet<String> = HashSet::new();
-    let pali_dir = Path::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms");
     for file in get_files(pali_dir) {
         let contents = std::fs::read_to_string(file)?;
         for segment in get_segments(contents.as_str())? {
@@ -62,6 +61,12 @@ fn main() -> Result<()> {
             }
         }
     }
+    Ok(vocabulary)
+}
+
+fn main() -> Result<()> {
+    let pali_dir = Path::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms");
+    let vocabulary = vocabulary(pali_dir)?;
     println!("Vocabulary contains {} words", vocabulary.len());
     Ok(())
 }
