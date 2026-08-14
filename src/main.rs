@@ -2,6 +2,8 @@ use anyhow::Result;
 use rusqlite::Connection;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use csv::Writer;
+use serde::Serialize;
 use tantivy::tokenizer::{TokenStream, Tokenizer, WhitespaceTokenizer};
 use walkdir::{DirEntry, WalkDir};
 
@@ -75,13 +77,30 @@ fn stem_table(conn: &mut Connection, vocabulary: &HashSet<String>) -> HashMap<St
     table
 }
 
+#[derive(Serialize)]
+struct TermStem {
+    term: String,
+    stem: Option<String>,
+}
+
+fn save_table(table: &HashMap<String, Option<String>>, path: &Path) -> Result<()> {
+    let mut writer = Writer::from_path(path)?;
+    for (key, value) in table {
+        let term_stem = TermStem { term: key.clone(), stem: value.clone() };
+        writer.serialize(term_stem)?;
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let pali_dir = Path::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms");
     let vocabulary = vocabulary(pali_dir)?;
-    println!("Vocabulary contains {} words", vocabulary.len());
+
     let mut conn = Connection::open("data/dpd.db")?;
     let table = stem_table(&mut conn, &vocabulary);
-    println!("Stem table contains {} entries", table.len());
+
+    let csv_file = Path::new("data/term_stems.csv");
+    save_table(&table, csv_file)?;
     Ok(())
 }
 
