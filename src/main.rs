@@ -1,9 +1,9 @@
 use anyhow::Result;
 use rusqlite::Connection;
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 
 #[derive(Debug)]
 struct Stem {
@@ -17,6 +17,14 @@ fn get_stem(conn: &mut Connection, word: &str) -> Result<String> {
         |row| Ok(Stem { stem: row.get(0)? }),
     )?;
     Ok(stem.stem)
+}
+
+fn get_files(location: &Path) -> impl Iterator<Item=PathBuf> {
+    WalkDir::new(location)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|e| is_pali_root_text_file(e.path()).expect("Not a Pali file."))
+        .map(DirEntry::into_path)
 }
 
 fn get_segments(content: &str) -> Result<Vec<String>> {
@@ -44,27 +52,20 @@ fn is_pali_root_text_file(path: &Path) -> Result<bool> {
 
 fn main() -> Result<()> {
     let db_path = Path::new("data/dpd.db");
-    let sutta_path = Path::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms/sutta/mn/mn1_root-pli-ms.json");
-
     let mut conn = Connection::open(db_path)?;
-    let contents = std::fs::read_to_string(sutta_path)?;
-
-    for segment in get_segments(contents.as_str())? {
-        for token in tokenize(segment.as_str()) {
-            let stem = get_stem(&mut conn, token.as_str());
-            match stem {
-                Ok(stem) => println!("{token} {stem}"),
-                Err(_) => println!("{token} NA"),
+    let pali_dir = Path::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms");
+    for file in get_files(pali_dir) {
+        let contents = std::fs::read_to_string(file)?;
+        for segment in get_segments(contents.as_str())? {
+            for token in tokenize(segment.as_str()) {
+                let stem = get_stem(&mut conn, token.as_str());
+                match stem {
+                    Ok(stem) => println!("{token} {stem}"),
+                    Err(_) => println!("{token} NA"),
+                }
             }
         }
     }
-
-    WalkDir::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms")
-        .into_iter()
-        .filter_map(Result::ok)
-        .filter(|e| is_pali_root_text_file(e.path()).expect("Not a Pali file."))
-        .for_each(|e| println!("{}", e.path().display()));
-
     Ok(())
 }
 
