@@ -2,7 +2,7 @@ use anyhow::Result;
 use rusqlite::Connection;
 use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
-use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
+use tantivy::tokenizer::{TokenStream, Tokenizer, WhitespaceTokenizer};
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Debug)]
@@ -41,7 +41,7 @@ fn segments(content: &str) -> Result<Vec<String>> {
 }
 
 fn tokenize(segment: &str) -> Vec<String> {
-    let mut tokenizer = SimpleTokenizer::default();
+    let mut tokenizer = WhitespaceTokenizer::default();
     let mut stream = tokenizer.token_stream(segment);
     let mut tokens = Vec::new();
     stream.process(&mut |token| {
