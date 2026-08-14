@@ -11,7 +11,7 @@ struct Stem {
 }
 
 #[allow(dead_code)]
-fn get_stem(conn: &mut Connection, word: &str) -> Result<String> {
+fn stems(conn: &mut Connection, word: &str) -> Result<String> {
     let stem = conn.query_one(
         "SELECT stem from dpd_headwords where lemma_1 == (?1)",
         [word],
@@ -20,7 +20,7 @@ fn get_stem(conn: &mut Connection, word: &str) -> Result<String> {
     Ok(stem.stem)
 }
 
-fn get_files(location: &Path) -> impl Iterator<Item=PathBuf> {
+fn pali_files(location: &Path) -> impl Iterator<Item=PathBuf> {
     WalkDir::new(location)
         .into_iter()
         .filter_map(Result::ok)
@@ -34,7 +34,7 @@ fn is_pali_root_text_file(path: &Path) -> Result<bool> {
     Ok(false)
 }
 
-fn get_segments(content: &str) -> Result<Vec<String>> {
+fn segments(content: &str) -> Result<Vec<String>> {
     let entries: BTreeMap<String, String> = serde_json::from_str(content)?;
     let segments: Vec<String> = entries.values().cloned().collect();
     Ok(segments)
@@ -53,9 +53,9 @@ fn tokenize(segment: &str) -> Vec<String> {
 
 fn vocabulary(pali_dir: &Path) -> Result<HashSet<String>> {
     let mut vocabulary: HashSet<String> = HashSet::new();
-    for file in get_files(pali_dir) {
+    for file in pali_files(pali_dir) {
         let contents = std::fs::read_to_string(file)?;
-        for segment in get_segments(contents.as_str())? {
+        for segment in segments(contents.as_str())? {
             for token in tokenize(segment.as_str()) {
                 vocabulary.insert(token);
             }
@@ -87,7 +87,7 @@ mod tests {
     fn test_get_stem() {
         let mut conn = Connection::open("data/dpd.db").unwrap();
         assert_eq!(
-            get_stem(&mut conn, "bhagavā").unwrap(),
+            stems(&mut conn, "bhagavā").unwrap(),
             String::from("!bhagav")
         );
     }
@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn test_get_segments() -> Result<()> {
         assert_eq!(
-            get_segments(MN1_SEGMENTS)?,
+            segments(MN1_SEGMENTS)?,
             vec!("Majjhima Nikāya 1 ", "Mūlapariyāyasutta ", "Evaṁ me sutaṁ—")
         );
         Ok(())
