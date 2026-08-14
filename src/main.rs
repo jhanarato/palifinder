@@ -1,6 +1,6 @@
 use anyhow::Result;
 use rusqlite::Connection;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
 use walkdir::{DirEntry, WalkDir};
@@ -10,6 +10,7 @@ struct Stem {
     stem: String,
 }
 
+#[allow(dead_code)]
 fn get_stem(conn: &mut Connection, word: &str) -> Result<String> {
     let stem = conn.query_one(
         "SELECT stem from dpd_headwords where lemma_1 == (?1)",
@@ -51,21 +52,17 @@ fn is_pali_root_text_file(path: &Path) -> Result<bool> {
 }
 
 fn main() -> Result<()> {
-    let db_path = Path::new("data/dpd.db");
-    let mut conn = Connection::open(db_path)?;
+    let mut vocabulary: HashSet<String> = HashSet::new();
     let pali_dir = Path::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms");
     for file in get_files(pali_dir) {
         let contents = std::fs::read_to_string(file)?;
         for segment in get_segments(contents.as_str())? {
             for token in tokenize(segment.as_str()) {
-                let stem = get_stem(&mut conn, token.as_str());
-                match stem {
-                    Ok(stem) => println!("{token} {stem}"),
-                    Err(_) => println!("{token} NA"),
-                }
+                vocabulary.insert(token);
             }
         }
     }
+    println!("Vocabulary contains {} words", vocabulary.len());
     Ok(())
 }
 
