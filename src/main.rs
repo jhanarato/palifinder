@@ -1,25 +1,13 @@
+pub mod dpd;
+
 use anyhow::Result;
+use csv::Writer;
 use rusqlite::Connection;
+use serde::Serialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use csv::Writer;
-use serde::Serialize;
 use tantivy::tokenizer::{TokenStream, Tokenizer, WhitespaceTokenizer};
 use walkdir::{DirEntry, WalkDir};
-
-#[derive(Debug)]
-struct Stem {
-    stem: String,
-}
-
-fn stem(conn: &mut Connection, word: &str) -> Result<String> {
-    let stem = conn.query_one(
-        "SELECT stem from dpd_headwords where lemma_1 == (?1)",
-        [word],
-        |row| Ok(Stem { stem: row.get(0)? }),
-    )?;
-    Ok(stem.stem)
-}
 
 fn pali_files(location: &Path) -> impl Iterator<Item=PathBuf> {
     WalkDir::new(location)
@@ -68,7 +56,7 @@ fn vocabulary(pali_dir: &Path) -> Result<HashSet<String>> {
 fn stem_table(conn: &mut Connection, vocabulary: &HashSet<String>) -> HashMap<String, Option<String>> {
     let mut table: HashMap<String, Option<String>> = HashMap::new();
     for term in vocabulary {
-        let term_stem = stem(conn, term);
+        let term_stem = dpd::stem(conn, term);
         match term_stem {
             Ok(stem) => { table.insert(term.clone(), Some(stem)); },
             Err(_) => { table.insert(term.clone(), None); },
@@ -107,6 +95,7 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dpd::stem;
 
     pub const MN1_SEGMENTS: &str = r#"
     {
