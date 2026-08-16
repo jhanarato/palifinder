@@ -95,7 +95,6 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dpd::stem;
 
     pub const MN1_SEGMENTS: &str = r#"
     {
@@ -104,15 +103,6 @@ mod tests {
         "mn1:1.1": "Evaṁ me sutaṁ—"
     }
     "#;
-
-    #[test]
-    fn test_get_stem() {
-        let mut conn = Connection::open("data/dpd.db").unwrap();
-        assert_eq!(
-            stem(&mut conn, "bhagavā").unwrap(),
-            String::from("!bhagav")
-        );
-    }
 
     #[test]
     fn test_get_segments() -> Result<()> {

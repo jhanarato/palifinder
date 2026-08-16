@@ -17,3 +17,17 @@ pub fn stem(conn: &mut Connection, word: &str) -> Result<String> {
     )?;
     Ok(stem.stem)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_stem() {
+        let mut conn = Connection::open("data/dpd.db").unwrap();
+        assert_eq!(
+            stem(&mut conn, "bhagavā").unwrap(),
+            String::from("!bhagav")
+        );
+    }
+}
