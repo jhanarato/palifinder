@@ -12,26 +12,14 @@ pub fn pali_files(location: &Path) -> impl Iterator<Item = PathBuf> {
 }
 
 fn is_pali_file(path: &Path) -> bool {
-    match path.metadata() {
-        Ok(metadata) => {
-            if metadata.is_file() {
-                 match path.file_stem() {
-                     Some(stem) => {
-                         match stem.to_str() {
-                             Some(stem_str) => {
-                                 stem_str.ends_with("root-pli-ms")
-                             },
-                             None => false
-                         }
-                     },
-                     None => false,
-                 }
-            } else {
-                false
-            }
-        },
-        Err(_) => false
+    if let Ok(metadata) = path.metadata()
+        && metadata.is_file()
+        && let Some(stem) = path.file_stem()
+        && let Some(stem) = stem.to_str()
+    {
+        return stem.ends_with("root-pli-ms");
     }
+    false
 }
 
 /// # Errors
