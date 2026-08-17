@@ -35,6 +35,13 @@ mod tests {
     }
 
     #[test]
+    fn test_missing_stem_is_error() {
+        let mut conn = connection();
+        let err = stem(&mut conn, "bhagavā").unwrap_err();
+        assert_eq!(err.to_string(), "Query returned no rows");
+    }
+
+    #[test]
     fn test_stem_with_lemma_1() {
         let mut conn = connection();
         conn.execute(
