@@ -42,6 +42,21 @@ mod tests {
     }
 
     #[test]
+    fn test_word_with_multiple_stems_is_error() {
+        let mut conn = connection();
+        conn.execute(
+            "INSERT INTO dpd_headwords (lemma_1, stem) VALUES (?1, ?2)",
+            ("bhagavā", "stem 1")
+        ).unwrap();
+        conn.execute(
+            "INSERT INTO dpd_headwords (lemma_1, stem) VALUES (?1, ?2)",
+            ("bhagavā", "stem 2")
+        ).unwrap();
+        let err = stem(&mut conn, "bhagavā").unwrap_err();
+        assert_eq!(err.to_string(), "Query returned more than one row");
+    }
+
+    #[test]
     fn test_stem_with_lemma_1() {
         let mut conn = connection();
         conn.execute(
