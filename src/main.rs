@@ -6,7 +6,8 @@ use csv::Writer;
 use rusqlite::Connection;
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use clap::Parser;
 use tantivy::tokenizer::{TokenStream, Tokenizer, WhitespaceTokenizer};
 
 fn tokenize(segment: &str) -> Vec<String> {
@@ -60,15 +61,21 @@ fn save_table(table: &HashMap<String, Option<String>>, path: &Path) -> Result<()
     Ok(())
 }
 
-fn main() -> Result<()> {
-    let pali_dir = Path::new("/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms");
-    let vocabulary = vocabulary(pali_dir)?;
-
-    let mut conn = Connection::open("data/dpd.db")?;
-    let table = stem_table(&mut conn, &vocabulary);
-
-    let csv_file = Path::new("data/term_stems.csv");
-    save_table(&table, csv_file)?;
-    Ok(())
+#[derive(Debug, Parser)]
+struct Arguments {
+    #[arg(long = "texts")]
+    texts: PathBuf,
+    #[arg(long = "dpd-db")]
+    dpd_db: PathBuf,
+    #[arg(long = "stems")]
+    stems: PathBuf,
 }
 
+fn main() -> Result<()> {
+    let args = Arguments::parse();
+    let vocabulary = vocabulary(args.texts.as_path())?;
+    let mut conn = Connection::open(args.dpd_db.as_path())?;
+    let table = stem_table(&mut conn, &vocabulary);
+    save_table(&table, args.stems.as_path())?;
+    Ok(())
+}
