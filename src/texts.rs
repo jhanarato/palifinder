@@ -20,6 +20,9 @@ fn is_pali_root_text_file(path: &Path) -> Result<bool> {
     Ok(stem_str.ends_with("root-pli-ms"))
 }
 
+/// # Errors
+///
+/// Returns `anyhow::Error` if JSON cannot be parsed.
 pub fn segments(content: &str) -> Result<Vec<String>> {
     let entries: BTreeMap<String, String> = serde_json::from_str(content)?;
     let segments: Vec<String> = entries.values().cloned().collect();
