@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
@@ -7,17 +7,31 @@ pub fn pali_files(location: &Path) -> impl Iterator<Item = PathBuf> {
     WalkDir::new(location)
         .into_iter()
         .filter_map(Result::ok)
-        .filter(|e| is_pali_root_text_file(e.path()).unwrap())
+        .filter(|e| is_pali_file(e.path()))
         .map(DirEntry::into_path)
 }
 
-fn is_pali_root_text_file(path: &Path) -> Result<bool> {
-    if !path.metadata()?.is_file() {
-        return Ok(false);
+fn is_pali_file(path: &Path) -> bool {
+    match path.metadata() {
+        Ok(metadata) => {
+            if metadata.is_file() {
+                 match path.file_stem() {
+                     Some(stem) => {
+                         match stem.to_str() {
+                             Some(stem_str) => {
+                                 stem_str.ends_with("root-pli-ms")
+                             },
+                             None => false
+                         }
+                     },
+                     None => false,
+                 }
+            } else {
+                false
+            }
+        },
+        Err(_) => false
     }
-    let file_stem = path.file_stem().context("File has missing stem")?;
-    let stem_str = file_stem.to_str().context("Error obtaining stem string")?;
-    Ok(stem_str.ends_with("root-pli-ms"))
 }
 
 /// # Errors
