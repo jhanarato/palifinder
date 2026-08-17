@@ -22,12 +22,26 @@ pub fn stem(conn: &mut Connection, word: &str) -> Result<String> {
 mod tests {
     use super::*;
 
+    fn connection() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute(
+            "CREATE TABLE dpd_headwords (
+                lemma_1 VARCHAR NOT NULL,
+                stem VARCHAR NOT NULL
+            )",
+            (),
+        ).unwrap();
+        conn
+    }
+
     #[test]
-    fn test_get_stem() {
-        let mut conn = Connection::open("data/dpd.db").unwrap();
-        assert_eq!(
-            stem(&mut conn, "bhagavā").unwrap(),
-            String::from("!bhagav")
-        );
+    fn test_stem_with_lemma_1() {
+        let mut conn = connection();
+        conn.execute(
+            "INSERT INTO dpd_headwords (lemma_1, stem) VALUES (?1, ?2)",
+            ("bhagavā", "!bhagav")
+        ).unwrap();
+
+        assert_eq!(stem(&mut conn, "bhagavā").unwrap(), String::from("!bhagav"));
     }
 }
