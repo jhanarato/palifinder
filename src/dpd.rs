@@ -1,5 +1,5 @@
+use anyhow::Result;
 use rusqlite::Connection;
-use anyhow::{Result};
 
 #[derive(Debug)]
 struct Stem {
@@ -30,7 +30,8 @@ mod tests {
                 stem VARCHAR NOT NULL
             )",
             (),
-        ).unwrap();
+        )
+        .unwrap();
         conn
     }
 
@@ -46,12 +47,14 @@ mod tests {
         let mut conn = connection();
         conn.execute(
             "INSERT INTO dpd_headwords (lemma_1, stem) VALUES (?1, ?2)",
-            ("bhagavā", "stem 1")
-        ).unwrap();
+            ("bhagavā", "stem 1"),
+        )
+        .unwrap();
         conn.execute(
             "INSERT INTO dpd_headwords (lemma_1, stem) VALUES (?1, ?2)",
-            ("bhagavā", "stem 2")
-        ).unwrap();
+            ("bhagavā", "stem 2"),
+        )
+        .unwrap();
         let err = stem(&mut conn, "bhagavā").unwrap_err();
         assert_eq!(err.to_string(), "Query returned more than one row");
     }
@@ -61,8 +64,9 @@ mod tests {
         let mut conn = connection();
         conn.execute(
             "INSERT INTO dpd_headwords (lemma_1, stem) VALUES (?1, ?2)",
-            ("bhagavā", "!bhagav")
-        ).unwrap();
+            ("bhagavā", "!bhagav"),
+        )
+        .unwrap();
 
         assert_eq!(stem(&mut conn, "bhagavā").unwrap(), String::from("!bhagav"));
     }
