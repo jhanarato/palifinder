@@ -74,6 +74,13 @@ fn save_table(table: &HashMap<String, Option<String>>, path: &Path) -> Result<()
 
 #[derive(Parser, Debug)]
 struct Arguments {
+    #[arg(
+        long = "dpd-db",
+        default_value = "data/dpd.db",
+        help = "Digital pali dictionary SQLite database file"
+    )]
+    dpd_db: PathBuf,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -81,12 +88,6 @@ struct Arguments {
 #[derive(Subcommand, Debug)]
 enum Command {
     Stem {
-        #[arg(
-            long = "dpd-db",
-            default_value = "data/dpd.db",
-            help = "Digital pali dictionary SQLite database file"
-        )]
-        dpd_db: PathBuf,
         #[arg(help = "The Pali word to stem")]
         word: String,
     },
@@ -97,12 +98,6 @@ enum Command {
             help = "Directory containing Pali root texts"
         )]
         texts: PathBuf,
-        #[arg(
-            long = "dpd-db",
-            default_value = "data/dpd.db",
-            help = "Digital pali dictionary SQLite database file"
-        )]
-        dpd_db: PathBuf,
         #[arg(
             long = "stem-file",
             default_value = "data/stems.csv",
@@ -117,16 +112,15 @@ fn main() -> Result<()> {
     match args.command {
         Command::StemTable {
             texts,
-            dpd_db,
             stem_file,
         } => {
             let vocabulary = vocabulary(texts.as_path())?;
-            let mut conn = Connection::open(dpd_db.as_path())?;
+            let mut conn = Connection::open(args.dpd_db.as_path())?;
             let table = stem_table(&mut conn, &vocabulary);
             save_table(&table, stem_file.as_path())?;
         },
-        Command::Stem {dpd_db, word} => {
-            let mut conn = Connection::open(dpd_db.as_path())?;
+        Command::Stem {word} => {
+            let mut conn = Connection::open(args.dpd_db.as_path())?;
             let stem = stem(&mut conn, word.as_str());
             match stem {
                 Ok(stem) => println!("{stem}"),
