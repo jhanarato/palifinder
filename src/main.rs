@@ -2,12 +2,12 @@ pub mod dpd;
 pub mod texts;
 
 use anyhow::Result;
+use clap::{Parser, Subcommand};
 use csv::Writer;
 use rusqlite::Connection;
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use clap::Parser;
 use tantivy::tokenizer::{TokenStream, Tokenizer, WhitespaceTokenizer};
 
 fn tokenize(segment: &str) -> Vec<String> {
@@ -34,13 +34,20 @@ fn vocabulary(pali_dir: &Path) -> Result<HashSet<String>> {
     Ok(vocabulary)
 }
 
-fn stem_table(conn: &mut Connection, vocabulary: &HashSet<String>) -> HashMap<String, Option<String>> {
+fn stem_table(
+    conn: &mut Connection,
+    vocabulary: &HashSet<String>,
+) -> HashMap<String, Option<String>> {
     let mut table: HashMap<String, Option<String>> = HashMap::new();
     for term in vocabulary {
         let term_stem = dpd::stem(conn, term);
         match term_stem {
-            Ok(stem) => { table.insert(term.clone(), Some(stem)); },
-            Err(_) => { table.insert(term.clone(), None); },
+            Ok(stem) => {
+                table.insert(term.clone(), Some(stem));
+            }
+            Err(_) => {
+                table.insert(term.clone(), None);
+            }
         }
     }
     table
@@ -55,27 +62,58 @@ struct TermStem {
 fn save_table(table: &HashMap<String, Option<String>>, path: &Path) -> Result<()> {
     let mut writer = Writer::from_path(path)?;
     for (key, value) in table {
-        let term_stem = TermStem { term: key.clone(), stem: value.clone() };
+        let term_stem = TermStem {
+            term: key.clone(),
+            stem: value.clone(),
+        };
         writer.serialize(term_stem)?;
     }
     Ok(())
 }
 
-#[derive(Debug, Parser)]
+#[derive(Parser, Debug)]
 struct Arguments {
-    #[arg(long = "texts")]
-    texts: PathBuf,
-    #[arg(long = "dpd-db")]
-    dpd_db: PathBuf,
-    #[arg(long = "stems")]
-    stems: PathBuf,
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand, Debug)]
+enum Command {
+    StemTable {
+        #[arg(
+            long = "texts",
+            default_value = "/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms",
+            help = "Directory containing Pali root texts"
+        )]
+        texts: PathBuf,
+        #[arg(
+            long = "dpd-db",
+            default_value = "data/dpd.db",
+            help = "Digital pali dictionary SQLite database file"
+        )]
+        dpd_db: PathBuf,
+        #[arg(
+            long = "stem-file",
+            default_value = "data/stems.csv",
+            help = "Location of output file",
+        )]
+        stem_file: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
-    let vocabulary = vocabulary(args.texts.as_path())?;
-    let mut conn = Connection::open(args.dpd_db.as_path())?;
-    let table = stem_table(&mut conn, &vocabulary);
-    save_table(&table, args.stems.as_path())?;
+    match args.command {
+        Command::StemTable {
+            texts,
+            dpd_db,
+            stem_file,
+        } => {
+            let vocabulary = vocabulary(texts.as_path())?;
+            let mut conn = Connection::open(dpd_db.as_path())?;
+            let table = stem_table(&mut conn, &vocabulary);
+            save_table(&table, stem_file.as_path())?;
+        }
+    }
     Ok(())
 }
