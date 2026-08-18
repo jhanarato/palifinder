@@ -9,6 +9,7 @@ use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use tantivy::tokenizer::{TokenStream, Tokenizer, WhitespaceTokenizer};
+use crate::dpd::stem;
 
 fn tokenize(segment: &str) -> Vec<String> {
     let mut tokenizer = WhitespaceTokenizer::default();
@@ -79,6 +80,16 @@ struct Arguments {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    Stem {
+        #[arg(
+            long = "dpd-db",
+            default_value = "data/dpd.db",
+            help = "Digital pali dictionary SQLite database file"
+        )]
+        dpd_db: PathBuf,
+        #[arg(help = "The Pali word to stem")]
+        word: String,
+    },
     StemTable {
         #[arg(
             long = "texts",
@@ -113,6 +124,15 @@ fn main() -> Result<()> {
             let mut conn = Connection::open(dpd_db.as_path())?;
             let table = stem_table(&mut conn, &vocabulary);
             save_table(&table, stem_file.as_path())?;
+        },
+        Command::Stem {dpd_db, word} => {
+            let mut conn = Connection::open(dpd_db.as_path())?;
+            let stem = stem(&mut conn, word.as_str());
+            match stem {
+                Ok(stem) => println!("{stem}"),
+                Err(_) => println!("Stem not found"),
+            }
+
         }
     }
     Ok(())
