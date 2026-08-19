@@ -2,6 +2,7 @@ pub mod dpd;
 pub mod texts;
 pub mod commands;
 pub mod table;
+pub mod tokenizer;
 
 use crate::dpd::stem;
 use anyhow::Result;
@@ -10,25 +11,13 @@ use commands::{Arguments, Command};
 use rusqlite::Connection;
 use std::collections::HashSet;
 use std::path::Path;
-use tantivy::tokenizer::{TokenStream, Tokenizer, WhitespaceTokenizer};
-
-fn tokenize(segment: &str) -> Vec<String> {
-    let mut tokenizer = WhitespaceTokenizer::default();
-    let mut stream = tokenizer.token_stream(segment);
-    let mut tokens = Vec::new();
-    stream.process(&mut |token| {
-        tokens.push(token.text.clone());
-    });
-
-    tokens
-}
 
 fn vocabulary(pali_dir: &Path) -> Result<HashSet<String>> {
     let mut vocabulary: HashSet<String> = HashSet::new();
     for file in texts::pali_files(pali_dir) {
         let contents = std::fs::read_to_string(file)?;
         for segment in texts::segments(contents.as_str())? {
-            for token in tokenize(segment.as_str()) {
+            for token in tokenizer::tokenize(segment.as_str()) {
                 vocabulary.insert(token);
             }
         }
