@@ -12,19 +12,6 @@ use rusqlite::Connection;
 use std::collections::HashSet;
 use std::path::Path;
 
-fn vocabulary(pali_dir: &Path) -> Result<HashSet<String>> {
-    let mut vocabulary: HashSet<String> = HashSet::new();
-    for file in texts::pali_files(pali_dir) {
-        let contents = std::fs::read_to_string(file)?;
-        for segment in texts::segments(contents.as_str())? {
-            for token in tokenizer::tokenize(segment.as_str()) {
-                vocabulary.insert(token);
-            }
-        }
-    }
-    Ok(vocabulary)
-}
-
 fn main() -> Result<()> {
     let args = Arguments::parse();
     match args.command {
@@ -48,4 +35,17 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn vocabulary(pali_dir: &Path) -> Result<HashSet<String>> {
+    let mut vocabulary: HashSet<String> = HashSet::new();
+    for file in texts::pali_files(pali_dir) {
+        let contents = std::fs::read_to_string(file)?;
+        for segment in texts::segments(contents.as_str())? {
+            for token in tokenizer::tokenize(segment.as_str()) {
+                vocabulary.insert(token);
+            }
+        }
+    }
+    Ok(vocabulary)
 }
