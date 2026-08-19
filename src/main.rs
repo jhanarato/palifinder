@@ -1,15 +1,17 @@
 pub mod dpd;
 pub mod texts;
+pub mod commands;
 
+use crate::dpd::stem;
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use commands::{Arguments, Command};
+use clap::Parser;
 use csv::Writer;
 use rusqlite::Connection;
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tantivy::tokenizer::{TokenStream, Tokenizer, WhitespaceTokenizer};
-use crate::dpd::stem;
 
 fn tokenize(segment: &str) -> Vec<String> {
     let mut tokenizer = WhitespaceTokenizer::default();
@@ -70,41 +72,6 @@ fn save_table(table: &HashMap<String, Option<String>>, path: &Path) -> Result<()
         writer.serialize(term_stem)?;
     }
     Ok(())
-}
-
-#[derive(Parser, Debug)]
-struct Arguments {
-    #[arg(
-        long = "dpd-db",
-        default_value = "data/dpd.db",
-        help = "Digital pali dictionary SQLite database file"
-    )]
-    dpd_db: PathBuf,
-
-    #[command(subcommand)]
-    command: Command,
-}
-
-#[derive(Subcommand, Debug)]
-enum Command {
-    Stem {
-        #[arg(help = "The Pali word to stem")]
-        word: String,
-    },
-    StemTable {
-        #[arg(
-            long = "texts",
-            default_value = "/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms",
-            help = "Directory containing Pali root texts"
-        )]
-        texts: PathBuf,
-        #[arg(
-            long = "stem-file",
-            default_value = "data/stems.csv",
-            help = "Location of output file",
-        )]
-        stem_file: PathBuf,
-    },
 }
 
 fn main() -> Result<()> {
