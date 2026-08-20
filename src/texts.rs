@@ -3,28 +3,38 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
-pub fn pali_files(location: &Path) -> impl Iterator<Item = PathBuf> {
-    WalkDir::new(location)
-        .into_iter()
-        .filter_map(Result::ok)
-        .filter(|e| is_pali_file(e.path()))
-        .map(DirEntry::into_path)
+#[derive(Clone, Debug)]
+pub struct PaliFiles {
+    location: PathBuf,
 }
 
-fn is_pali_file(path: &Path) -> bool {
-    if let Ok(metadata) = path.metadata()
-        && metadata.is_file()
-        && let Some(stem) = path.file_stem()
-        && let Some(stem) = stem.to_str()
-    {
-        return stem.ends_with("root-pli-ms");
+impl PaliFiles {
+    #[must_use]
+    pub fn new(location: PathBuf) -> Self {
+        Self { location }
     }
-    false
+
+    pub fn files(&self) -> impl Iterator<Item = PathBuf> {
+        WalkDir::new(&self.location)
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|e| Self::is_pali_file(e.path()))
+            .map(DirEntry::into_path)
+    }
+
+    fn is_pali_file(path: &Path) -> bool {
+        if let Ok(metadata) = path.metadata()
+            && metadata.is_file()
+            && let Some(stem) = path.file_stem()
+            && let Some(stem) = stem.to_str()
+        {
+            return stem.ends_with("root-pli-ms");
+        }
+        false
+    }
 }
 
-/// # Errors
-///
-/// Returns `anyhow::Error` if JSON cannot be parsed.
+#[allow(clippy::missing_errors_doc)]
 pub fn segments(content: &str) -> Result<Vec<String>> {
     let entries: BTreeMap<String, String> = serde_json::from_str(content)?;
     let segments: Vec<String> = entries.values().cloned().collect();
