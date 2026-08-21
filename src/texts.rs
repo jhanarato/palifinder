@@ -34,6 +34,28 @@ impl PaliFiles {
     }
 }
 
+#[derive(Clone, Debug, PartialOrd, PartialEq)]
+struct PaliText {
+    segments: Vec<Segment>,
+}
+
+#[derive(Clone, Debug, PartialOrd, PartialEq)]
+struct Segment {
+    uid: String,
+    text: String,
+}
+
+impl PaliText {
+    fn parse(json: &str) -> Result<Self> {
+        let entries: BTreeMap<String, String> = serde_json::from_str(json)?;
+        let segments: Vec<Segment> = entries
+            .iter()
+            .map(|(k, v)| Segment { uid: k.clone(), text: v.clone() })
+            .collect();
+        Ok(Self { segments })
+    }
+}
+
 #[allow(clippy::missing_errors_doc)]
 pub fn segments(content: &str) -> Result<Vec<String>> {
     let entries: BTreeMap<String, String> = serde_json::from_str(content)?;
@@ -60,5 +82,27 @@ mod tests {
             vec!("Majjhima Nikāya 1 ", "Mūlapariyāyasutta ", "Evaṁ me sutaṁ—")
         );
         Ok(())
+    }
+
+    #[test]
+    fn test_parse_pali_json() {
+        let file = PaliText::parse(MN1_SEGMENTS).unwrap();
+        assert_eq!(
+            file.segments,
+            vec!(
+                Segment {
+                    uid: String::from("mn1:0.1"),
+                    text: String::from("Majjhima Nikāya 1 ")
+                },
+                Segment {
+                    uid: String::from("mn1:0.2"),
+                    text: String::from("Mūlapariyāyasutta ")
+                },
+                Segment {
+                    uid: String::from("mn1:1.1"),
+                    text: String::from("Evaṁ me sutaṁ—")
+                },
+            )
+        );
     }
 }
