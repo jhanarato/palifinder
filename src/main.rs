@@ -5,14 +5,11 @@ pub mod table;
 pub mod tokenizer;
 
 use crate::dpd::stem;
-use crate::texts::{PaliFiles, PaliText};
+use crate::texts::PaliFiles;
 use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
 use rusqlite::Connection;
-use std::collections::HashSet;
-use std::path::Path;
-use crate::tokenizer::tokenize;
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -21,9 +18,9 @@ fn main() -> Result<()> {
             texts,
             stem_file,
         } => {
-            let vocabulary = vocabulary(texts.as_path())?;
+            let files = PaliFiles::new(texts);
             let mut conn = Connection::open(args.dpd_db.as_path())?;
-            let table = table::stem_table(&mut conn, &vocabulary);
+            let table = table::stem_table(&mut conn, &files.vocabulary()?);
             table::save_table(&table, stem_file.as_path())?;
         },
         Command::Stem {word} => {
@@ -37,19 +34,4 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
-}
-
-fn vocabulary(pali_dir: &Path) -> Result<HashSet<String>> {
-    let mut vocabulary: HashSet<String> = HashSet::new();
-    let files = PaliFiles::new(pali_dir.to_path_buf());
-    for file in files.files() {
-        let json = std::fs::read_to_string(file)?;
-        let text = PaliText::parse(json.as_str())?;
-        for segment in text.segments {
-            for token in tokenize(segment.text.as_str()) {
-                vocabulary.insert(token);
-            }
-        }
-    }
-    Ok(vocabulary)
 }
