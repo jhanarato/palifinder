@@ -5,13 +5,14 @@ pub mod table;
 pub mod tokenizer;
 
 use crate::dpd::stem;
-use crate::texts::PaliFiles;
+use crate::texts::{PaliFiles, PaliText};
 use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
 use rusqlite::Connection;
 use std::collections::HashSet;
 use std::path::Path;
+use crate::tokenizer::tokenize;
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -42,9 +43,10 @@ fn vocabulary(pali_dir: &Path) -> Result<HashSet<String>> {
     let mut vocabulary: HashSet<String> = HashSet::new();
     let files = PaliFiles::new(pali_dir.to_path_buf());
     for file in files.files() {
-        let contents = std::fs::read_to_string(file)?;
-        for segment in texts::segments(contents.as_str())? {
-            for token in tokenizer::tokenize(segment.as_str()) {
+        let json = std::fs::read_to_string(file)?;
+        let text = PaliText::parse(json.as_str())?;
+        for segment in text.segments {
+            for token in tokenize(segment.text.as_str()) {
                 vocabulary.insert(token);
             }
         }
