@@ -1,4 +1,5 @@
-use crate::texts::{PaliText, Segment};
+use crate::texts::{PaliFiles, PaliText, Segment};
+use anyhow::{Error, Result};
 use std::collections::HashSet;
 use std::collections::hash_set::IntoIter;
 use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
@@ -56,6 +57,21 @@ impl From<PaliText> for Vocabulary {
             vocabulary.add_text(segment.text.as_str());
         }
         vocabulary
+    }
+}
+
+impl TryFrom<PaliFiles> for Vocabulary {
+    type Error = Error;
+    fn try_from(pali_files: PaliFiles) -> Result<Self, Self::Error> {
+        let mut vocabulary = Self::new();
+        for file in pali_files.files() {
+            let json = std::fs::read_to_string(file)?;
+            let text = PaliText::parse(json.as_str())?;
+            for segment in text.segments {
+                vocabulary.add_text(segment.text.as_str());
+            }
+        }
+        Ok(vocabulary)
     }
 }
 
