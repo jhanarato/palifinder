@@ -3,6 +3,7 @@ pub mod texts;
 pub mod commands;
 pub mod table;
 pub mod tokenizer;
+pub mod vocabulary;
 
 use crate::dpd::stem;
 use crate::texts::PaliFiles;
