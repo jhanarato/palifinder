@@ -1,8 +1,9 @@
-use crate::texts::Segment;
+use crate::texts::{PaliText, Segment};
 use std::collections::HashSet;
 use std::collections::hash_set::IntoIter;
 use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
 
+#[derive(Debug)]
 pub struct Vocabulary {
     #[allow(dead_code)]
     tokens: HashSet<String>,
@@ -48,6 +49,16 @@ impl From<Segment> for Vocabulary {
     }
 }
 
+impl From<PaliText> for Vocabulary {
+    fn from(pali_text: PaliText) -> Self {
+        let mut vocabulary = Self::new();
+        for segment in pali_text.segments {
+            vocabulary.add_text(segment.text.as_str());
+        }
+        vocabulary
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -73,5 +84,20 @@ mod tests {
         let mut words: Vec<String> = vocabulary.into_iter().collect();
         words.sort();
         assert_eq!(words, vec!("Evaṁ", "me", "sutaṁ"));
+    }
+
+    #[test]
+    fn test_from_pali_text() {
+        let json = r#"
+        {
+            "mn1:0.2": "Mūlapariyāyasutta ",
+            "mn1:1.1": "Evaṁ me sutaṁ—"
+        }
+        "#;
+        let text = PaliText::parse(json).unwrap();
+        let vocabulary = Vocabulary::from(text);
+        let mut words: Vec<String> = vocabulary.into_iter().collect();
+        words.sort();
+        assert_eq!(words, vec!("Evaṁ", "Mūlapariyāyasutta", "me", "sutaṁ"));
     }
 }
