@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::collections::hash_set::IntoIter;
 use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
 
 pub struct Vocabulary {
@@ -15,10 +16,12 @@ impl Default for Vocabulary {
 impl Vocabulary {
     #[allow(dead_code)]
     pub fn new() -> Self {
-        Self { tokens: HashSet::new() }
+        Self {
+            tokens: HashSet::new(),
+        }
     }
 
-    pub fn add_text(& mut self, text: &str) {
+    pub fn add_text(&mut self, text: &str) {
         let mut tokenizer = SimpleTokenizer::default();
         let mut stream = tokenizer.token_stream(text);
         stream.process(&mut |token| {
@@ -27,17 +30,25 @@ impl Vocabulary {
     }
 }
 
+impl IntoIterator for Vocabulary {
+    type Item = String;
+    type IntoIter = IntoIter<String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.tokens.into_iter()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_add_text() {
+    fn test_into_iterator() {
         let mut vocabulary = Vocabulary::new();
         vocabulary.add_text("Evaṁ me sutaṁ—");
-        assert_eq!(vocabulary.tokens.iter().len(), 3);
-        assert!(vocabulary.tokens.contains("Evaṁ"));
-        assert!(vocabulary.tokens.contains("me"));
-        assert!(vocabulary.tokens.contains("sutaṁ"));
+        let mut words: Vec<String> = vocabulary.into_iter().collect();
+        words.sort();
+        assert_eq!(words, vec!("Evaṁ", "me", "sutaṁ"));
     }
 }
