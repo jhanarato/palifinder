@@ -1,3 +1,4 @@
+use crate::texts::Segment;
 use std::collections::HashSet;
 use std::collections::hash_set::IntoIter;
 use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
@@ -39,6 +40,14 @@ impl IntoIterator for Vocabulary {
     }
 }
 
+impl From<Segment> for Vocabulary {
+    fn from(segment: Segment) -> Self {
+        let mut vocabulary = Self::new();
+        vocabulary.add_text(segment.text.as_str());
+        vocabulary
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -47,6 +56,20 @@ mod tests {
     fn test_into_iterator() {
         let mut vocabulary = Vocabulary::new();
         vocabulary.add_text("Evaṁ me sutaṁ—");
+        let mut words: Vec<String> = vocabulary.into_iter().collect();
+        words.sort();
+        assert_eq!(words, vec!("Evaṁ", "me", "sutaṁ"));
+    }
+
+    #[test]
+    fn test_from_segment() {
+        let segment = Segment {
+            uid: String::from("mn1:0.1"),
+            text: String::from("Evaṁ me sutaṁ—"),
+        };
+
+        let vocabulary = Vocabulary::from(segment);
+
         let mut words: Vec<String> = vocabulary.into_iter().collect();
         words.sort();
         assert_eq!(words, vec!("Evaṁ", "me", "sutaṁ"));
