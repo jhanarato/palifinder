@@ -11,6 +11,7 @@ use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
 use rusqlite::Connection;
+use crate::vocabulary::Vocabulary;
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -20,8 +21,9 @@ fn main() -> Result<()> {
             stem_file,
         } => {
             let files = PaliFiles::new(texts);
+            let vocabulary = Vocabulary::try_from(files)?;
             let mut conn = Connection::open(args.dpd_db.as_path())?;
-            let table = table::stem_table(&mut conn, &files.vocabulary()?);
+            let table = table::stem_table(&mut conn, vocabulary);
             table::save_table(&table, stem_file.as_path())?;
         },
         Command::Stem {word} => {

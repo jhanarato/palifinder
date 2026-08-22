@@ -1,8 +1,7 @@
 use anyhow::Result;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
-use crate::tokenizer::tokenize;
 
 #[derive(Clone, Debug)]
 pub struct PaliFiles {
@@ -32,21 +31,6 @@ impl PaliFiles {
             return stem.ends_with("root-pli-ms");
         }
         false
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub fn vocabulary(&self) -> Result<HashSet<String>> {
-        let mut vocabulary: HashSet<String> = HashSet::new();
-        for file in self.files() {
-            let json = std::fs::read_to_string(file)?;
-            let text = PaliText::parse(json.as_str())?;
-            for segment in text.segments {
-                for token in tokenize(segment.text.as_str()) {
-                    vocabulary.insert(token);
-                }
-            }
-        }
-        Ok(vocabulary)
     }
 }
 

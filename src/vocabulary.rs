@@ -6,7 +6,6 @@ use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
 
 #[derive(Debug)]
 pub struct Vocabulary {
-    #[allow(dead_code)]
     tokens: HashSet<String>,
 }
 
@@ -17,7 +16,7 @@ impl Default for Vocabulary {
 }
 
 impl Vocabulary {
-    #[allow(dead_code)]
+    #[must_use]
     pub fn new() -> Self {
         Self {
             tokens: HashSet::new(),

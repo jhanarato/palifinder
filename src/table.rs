@@ -1,19 +1,20 @@
 use crate::dpd;
+use crate::vocabulary::Vocabulary;
+use anyhow::Result;
 use csv::Writer;
 use rusqlite::Connection;
 use serde::Serialize;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::path::Path;
-use anyhow::{Result};
 
 #[allow(clippy::implicit_hasher)]
 pub fn stem_table(
     conn: &mut Connection,
-    vocabulary: &HashSet<String>,
+    vocabulary: Vocabulary,
 ) -> HashMap<String, Option<String>> {
     let mut table: HashMap<String, Option<String>> = HashMap::new();
     for term in vocabulary {
-        let term_stem = dpd::stem(conn, term);
+        let term_stem = dpd::stem(conn, term.as_str());
         match term_stem {
             Ok(stem) => {
                 table.insert(term.clone(), Some(stem));
@@ -32,10 +33,7 @@ struct TermStem {
     stem: Option<String>,
 }
 
-/// # Errors
-///
-/// Will return an `anyhow::Result` if there are errors writing the file.
-#[allow(clippy::implicit_hasher)]
+#[allow(clippy::implicit_hasher, clippy::missing_errors_doc)]
 pub fn save_table(table: &HashMap<String, Option<String>>, path: &Path) -> Result<()> {
     let mut writer = Writer::from_path(path)?;
     for (key, value) in table {
