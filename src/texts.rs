@@ -22,6 +22,10 @@ impl PaliFiles {
             .map(DirEntry::into_path)
     }
 
+    pub fn texts(&self) -> impl Iterator<Item=Result<PaliText>> {
+        self.files().map(|file| PaliText::try_from(&file))
+    }
+
     fn is_pali_file(path: &Path) -> bool {
         if let Ok(metadata) = path.metadata()
             && metadata.is_file()
@@ -33,15 +37,6 @@ impl PaliFiles {
         false
     }
 }
-
-// impl IntoIterator for PaliFiles {
-//     type Item = Result<PaliText>;
-//     type IntoIter = ();
-// 
-//     fn into_iter(self) -> Self::IntoIter {
-//         self.files().map(|file|)
-//     }
-// }
 
 #[derive(Clone, Debug, PartialOrd, PartialEq)]
 pub struct PaliText {

@@ -63,8 +63,8 @@ impl TryFrom<PaliFiles> for Vocabulary {
     type Error = Error;
     fn try_from(pali_files: PaliFiles) -> Result<Self, Self::Error> {
         let mut vocabulary = Self::new();
-        for file in pali_files.files() {
-            let text = PaliText::try_from(&file)?;
+        for text in pali_files.texts() {
+            let text = text?;
             for segment in text.segments {
                 vocabulary.add_text(segment.text.as_str());
             }
