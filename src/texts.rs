@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Error, Result};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
@@ -14,7 +14,7 @@ impl PaliFiles {
         Self { location }
     }
 
-    pub fn files(&self) -> impl Iterator<Item = PathBuf> {
+    pub fn files(&self) -> impl Iterator<Item=PathBuf> {
         WalkDir::new(&self.location)
             .into_iter()
             .filter_map(Result::ok)
@@ -33,6 +33,15 @@ impl PaliFiles {
         false
     }
 }
+
+// impl IntoIterator for PaliFiles {
+//     type Item = Result<PaliText>;
+//     type IntoIter = ();
+// 
+//     fn into_iter(self) -> Self::IntoIter {
+//         self.files().map(|file|)
+//     }
+// }
 
 #[derive(Clone, Debug, PartialOrd, PartialEq)]
 pub struct PaliText {
@@ -57,11 +66,29 @@ impl PaliText {
     }
 }
 
+impl IntoIterator for PaliText {
+    type Item = Segment;
+    type IntoIter = std::vec::IntoIter<Segment>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.segments.into_iter()
+    }
+}
+
+impl TryFrom<&PathBuf> for PaliText {
+    type Error = Error;
+
+    fn try_from(file: &PathBuf) -> std::result::Result<Self, Self::Error> {
+        let json = std::fs::read_to_string(file)?;
+        PaliText::parse(json.as_str())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    pub const MN1_SEGMENTS: &str = r#"
+    pub const TEXT_JSON: &str = r#"
     {
         "mn1:0.1": "Majjhima Nikāya 1 ",
         "mn1:0.2": "Mūlapariyāyasutta ",
@@ -69,25 +96,36 @@ mod tests {
     }
     "#;
 
+    fn expected_segments() -> Vec<Segment> {
+        vec!(
+            Segment {
+                uid: String::from("mn1:0.1"),
+                text: String::from("Majjhima Nikāya 1 ")
+            },
+            Segment {
+                uid: String::from("mn1:0.2"),
+                text: String::from("Mūlapariyāyasutta ")
+            },
+            Segment {
+                uid: String::from("mn1:1.1"),
+                text: String::from("Evaṁ me sutaṁ—")
+            },
+        )
+    }
+
     #[test]
     fn test_parse_pali_json() {
-        let file = PaliText::parse(MN1_SEGMENTS).unwrap();
+        let text = PaliText::parse(TEXT_JSON).unwrap();
         assert_eq!(
-            file.segments,
-            vec!(
-                Segment {
-                    uid: String::from("mn1:0.1"),
-                    text: String::from("Majjhima Nikāya 1 ")
-                },
-                Segment {
-                    uid: String::from("mn1:0.2"),
-                    text: String::from("Mūlapariyāyasutta ")
-                },
-                Segment {
-                    uid: String::from("mn1:1.1"),
-                    text: String::from("Evaṁ me sutaṁ—")
-                },
-            )
+            text.segments,
+            expected_segments()
         );
+    }
+
+    #[test]
+    fn test_pali_text_into_segment_iterator() {
+        let text = PaliText::parse(TEXT_JSON).unwrap();
+        let segments: Vec<Segment> = text.into_iter().collect();
+        assert_eq!(segments, expected_segments());
     }
 }

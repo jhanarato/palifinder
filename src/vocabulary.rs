@@ -64,8 +64,7 @@ impl TryFrom<PaliFiles> for Vocabulary {
     fn try_from(pali_files: PaliFiles) -> Result<Self, Self::Error> {
         let mut vocabulary = Self::new();
         for file in pali_files.files() {
-            let json = std::fs::read_to_string(file)?;
-            let text = PaliText::parse(json.as_str())?;
+            let text = PaliText::try_from(&file)?;
             for segment in text.segments {
                 vocabulary.add_text(segment.text.as_str());
             }
