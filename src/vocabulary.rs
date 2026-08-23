@@ -1,5 +1,4 @@
-use crate::texts::{PaliFiles, PaliText, Segment};
-use anyhow::{Error, Result};
+use crate::texts::Segment;
 use std::collections::HashSet;
 use std::collections::hash_set::IntoIter;
 use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
@@ -9,18 +8,16 @@ pub struct Vocabulary {
     tokens: HashSet<String>,
 }
 
-impl Default for Vocabulary {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Vocabulary {
     #[must_use]
-    pub fn new() -> Self {
-        Self {
+    pub fn new(segments: impl Iterator<Item = Segment>) -> Self {
+        let mut vocabulary = Self {
             tokens: HashSet::new(),
+        };
+        for segment in segments {
+            vocabulary.add_text(segment.text.as_str());
         }
+        vocabulary
     }
 
     pub fn add_text(&mut self, text: &str) {
@@ -41,77 +38,27 @@ impl IntoIterator for Vocabulary {
     }
 }
 
-impl From<Segment> for Vocabulary {
-    fn from(segment: Segment) -> Self {
-        let mut vocabulary = Self::new();
-        vocabulary.add_text(segment.text.as_str());
-        vocabulary
-    }
-}
-
-impl From<PaliText> for Vocabulary {
-    fn from(pali_text: PaliText) -> Self {
-        let mut vocabulary = Self::new();
-        for segment in pali_text.segments {
-            vocabulary.add_text(segment.text.as_str());
-        }
-        vocabulary
-    }
-}
-
-impl TryFrom<PaliFiles> for Vocabulary {
-    type Error = Error;
-    fn try_from(pali_files: PaliFiles) -> Result<Self, Self::Error> {
-        let mut vocabulary = Self::new();
-        for text in pali_files.texts() {
-            let text = text?;
-            for segment in text.segments {
-                vocabulary.add_text(segment.text.as_str());
-            }
-        }
-        Ok(vocabulary)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_into_iterator() {
-        let mut vocabulary = Vocabulary::new();
-        vocabulary.add_text("Evaṁ me sutaṁ—");
-        let mut words: Vec<String> = vocabulary.into_iter().collect();
-        words.sort();
-        assert_eq!(words, vec!("Evaṁ", "me", "sutaṁ"));
-    }
+    fn test_construct_from_segments() {
+        let segments = vec![
+            Segment {
+                uid: String::from("uid1"),
+                text: String::from("the cat sat"),
+            },
+            Segment {
+                uid: String::from("uid1"),
+                text: String::from("on the mat"),
+            },
+        ];
 
-    #[test]
-    fn test_from_segment() {
-        let segment = Segment {
-            uid: String::from("mn1:0.1"),
-            text: String::from("Evaṁ me sutaṁ—"),
-        };
+        let mut vocabulary: Vec<String> =
+            Vocabulary::new(segments.into_iter()).into_iter().collect();
+        vocabulary.sort();
 
-        let vocabulary = Vocabulary::from(segment);
-
-        let mut words: Vec<String> = vocabulary.into_iter().collect();
-        words.sort();
-        assert_eq!(words, vec!("Evaṁ", "me", "sutaṁ"));
-    }
-
-    #[test]
-    fn test_from_pali_text() {
-        let json = r#"
-        {
-            "mn1:0.2": "Mūlapariyāyasutta ",
-            "mn1:1.1": "Evaṁ me sutaṁ—"
-        }
-        "#;
-        let text = PaliText::parse(json).unwrap();
-        let vocabulary = Vocabulary::from(text);
-        let mut words: Vec<String> = vocabulary.into_iter().collect();
-        words.sort();
-        assert_eq!(words, vec!("Evaṁ", "Mūlapariyāyasutta", "me", "sutaṁ"));
+        assert_eq!(vocabulary, vec!("cat", "mat", "on", "sat", "the"));
     }
 }
