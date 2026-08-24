@@ -13,7 +13,7 @@ use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
 use rusqlite::Connection;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -35,7 +35,7 @@ fn main() -> Result<()> {
         }
         Command::Chars {} => {
             let files = PaliFiles::new(args.texts);
-            let mut chars = HashSet::<char>::new();
+            let mut chars = BTreeSet::<char>::new();
             for segment in files.segments() {
                 for char in segment.text.chars() {
                     chars.insert(char);
