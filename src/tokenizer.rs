@@ -1,12 +1,29 @@
 use std::str::CharIndices;
 use tantivy::tokenizer::{Token, TokenStream, Tokenizer};
 
-pub const PALI_CHARS: [char; 60] = [
-    'A', 'B', 'C', 'D', 'E', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'T', 'U',
-    'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
-    'r', 's', 't', 'u', 'v', 'y', 'Ñ', 'ñ', 'Ā', 'ā', 'Ī', 'ī', 'Ū', 'ū', 'Ḍ', 'ḍ', 'ḷ', 'ṁ', 'ṅ',
-    'ṇ', 'Ṭ', 'ṭ',
-];
+pub struct PaliChars {
+    chars: Vec<char>,
+}
+
+impl Default for PaliChars {
+    fn default() -> Self {
+        Self {
+            chars: vec![
+                'A', 'B', 'C', 'D', 'E', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R',
+                'S', 'T', 'U', 'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+                'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'v', 'y', 'Ñ', 'ñ', 'Ā', 'ā',
+                'Ī', 'ī', 'Ū', 'ū', 'Ḍ', 'ḍ', 'ḷ', 'ṁ', 'ṅ', 'ṇ', 'Ṭ', 'ṭ',
+            ],
+        }
+    }
+}
+
+impl PaliChars {
+    #[must_use]
+    pub fn is_pali(&self, char: char) -> bool {
+        self.chars.contains(&char)
+    }
+}
 
 #[must_use]
 pub fn tokenize(segment: &str) -> Vec<String> {
@@ -107,5 +124,14 @@ mod tests {
         let tokens = token_stream_helper("bhagavā");
         assert_eq!(tokens.len(), 1);
         assert_token(&tokens[0], 0, "bhagavā", 0, 7);
+    }
+
+    #[test]
+    fn test_chars() {
+        let chars = PaliChars::default();
+        assert!(chars.is_pali('A'));
+        assert!(chars.is_pali('Ḍ'));
+        assert!(!chars.is_pali('X'));
+        assert!(!chars.is_pali('?'));
     }
 }
