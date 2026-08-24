@@ -1,6 +1,13 @@
 use std::str::CharIndices;
 use tantivy::tokenizer::{Token, TokenStream, Tokenizer};
 
+pub const PALI_CHARS: [char; 60] = [
+    'A', 'B', 'C', 'D', 'E', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'T', 'U',
+    'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
+    'r', 's', 't', 'u', 'v', 'y', 'Ñ', 'ñ', 'Ā', 'ā', 'Ī', 'ī', 'Ū', 'ū', 'Ḍ', 'ḍ', 'ḷ', 'ṁ', 'ṅ',
+    'ṇ', 'Ṭ', 'ṭ',
+];
+
 #[must_use]
 pub fn tokenize(segment: &str) -> Vec<String> {
     let mut tokenizer = PaliTokenizer::default();
@@ -34,13 +41,12 @@ impl Tokenizer for PaliTokenizer {
             more: true,
             _text: text,
             _chars: text.char_indices(),
-            token : &mut self.token,
+            token: &mut self.token,
         }
     }
 }
 
-impl PaliTokenStream<'_> {
-}
+impl PaliTokenStream<'_> {}
 
 impl TokenStream for PaliTokenStream<'_> {
     fn advance(&mut self) -> bool {
@@ -69,7 +75,7 @@ impl TokenStream for PaliTokenStream<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tantivy::tokenizer::{TextAnalyzer};
+    use tantivy::tokenizer::TextAnalyzer;
 
     /// Helper function for testing token output. Copied from the `tantivy::tokenizer` tests.
     fn assert_token(token: &Token, position: usize, text: &str, from: usize, to: usize) {
