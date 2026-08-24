@@ -39,4 +39,6 @@ pub enum Command {
     },
     /// Display all characters found in the texts
     Chars {},
+    /// Tokenizer will skip these characters
+    SplitOn {}
 }

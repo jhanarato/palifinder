@@ -7,7 +7,7 @@ pub mod vocabulary;
 
 use crate::dpd::stem;
 use crate::texts::PaliFiles;
-use crate::tokenizer::PaliTokenizer;
+use crate::tokenizer::{PaliChars, PaliTokenizer};
 use crate::vocabulary::Vocabulary;
 use anyhow::Result;
 use clap::Parser;
@@ -43,6 +43,21 @@ fn main() -> Result<()> {
             }
             for char in chars {
                 print!("{char} ");
+            }
+        }
+        Command::SplitOn {} => {
+            let files = PaliFiles::new(args.texts);
+            let mut chars = BTreeSet::<char>::new();
+            for segment in files.segments() {
+                for char in segment.text.chars() {
+                    chars.insert(char);
+                }
+            }
+            let pali_chars = PaliChars::default();
+            for char in chars {
+                if !pali_chars.is_pali(char) {
+                    print!("{char} ");
+                }
             }
         }
     }
