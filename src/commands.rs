@@ -23,19 +23,20 @@ pub struct Arguments {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
+    /// Print the stem of a Pali word
     Stem {
         #[arg(help = "The Pali word to stem")]
         word: String,
     },
+    /// Save the lemmas and stems for all texts.
     StemTable {
         #[arg(
             long = "stem-file",
             default_value = "data/stems.csv",
-            help = "Location of output file",
+            help = "Location of output file"
         )]
         stem_file: PathBuf,
     },
-    Chars {
-
-    }
+    /// Display all characters found in the texts
+    Chars {},
 }
