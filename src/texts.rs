@@ -36,6 +36,10 @@ impl PaliFiles {
         }
         false
     }
+
+    pub fn segments(&self) -> impl Iterator<Item = Segment> {
+        self.texts().filter_map(Result::ok).flat_map(|text| text.segments)
+    }
 }
 
 #[derive(Clone, Debug, PartialOrd, PartialEq)]

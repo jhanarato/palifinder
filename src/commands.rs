@@ -10,6 +10,13 @@ pub struct Arguments {
     )]
     pub dpd_db: PathBuf,
 
+    #[arg(
+        long = "texts",
+        default_value = "/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms",
+        help = "Directory containing Pali root texts"
+    )]
+    pub texts: PathBuf,
+
     #[command(subcommand)]
     pub command: Command,
 }
@@ -22,16 +29,13 @@ pub enum Command {
     },
     StemTable {
         #[arg(
-            long = "texts",
-            default_value = "/opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms",
-            help = "Directory containing Pali root texts"
-        )]
-        texts: PathBuf,
-        #[arg(
             long = "stem-file",
             default_value = "data/stems.csv",
             help = "Location of output file",
         )]
         stem_file: PathBuf,
     },
+    Chars {
+
+    }
 }
