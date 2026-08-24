@@ -6,13 +6,14 @@ pub mod tokenizer;
 pub mod vocabulary;
 
 use crate::dpd::stem;
-use crate::texts::{PaliFiles, Segment};
+use crate::texts::PaliFiles;
 use crate::tokenizer::PaliTokenizer;
 use crate::vocabulary::Vocabulary;
 use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
 use rusqlite::Connection;
+use std::collections::HashSet;
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -34,8 +35,15 @@ fn main() -> Result<()> {
         }
         Command::Chars {} => {
             let files = PaliFiles::new(args.texts);
-            let segments: Vec<Segment> = files.segments().collect();
-            println!("Segment count: {}", segments.len());
+            let mut chars = HashSet::<char>::new();
+            for segment in files.segments() {
+                for char in segment.text.chars() {
+                    chars.insert(char);
+                }
+            }
+            for char in chars {
+                print!("{char} ");
+            }
         }
     }
     Ok(())
