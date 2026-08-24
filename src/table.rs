@@ -6,11 +6,12 @@ use rusqlite::Connection;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::Path;
+use tantivy::tokenizer::Tokenizer;
 
 #[allow(clippy::implicit_hasher)]
-pub fn stem_table(
+pub fn stem_table<T: Tokenizer>(
     conn: &mut Connection,
-    vocabulary: Vocabulary,
+    vocabulary: Vocabulary<T>,
 ) -> HashMap<String, Option<String>> {
     let mut table: HashMap<String, Option<String>> = HashMap::new();
     for term in vocabulary {

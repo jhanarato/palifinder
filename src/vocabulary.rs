@@ -1,17 +1,19 @@
 use crate::texts::Segment;
 use std::collections::HashSet;
 use std::collections::hash_set::IntoIter;
-use tantivy::tokenizer::{SimpleTokenizer, TokenStream, Tokenizer};
+use tantivy::tokenizer::{TokenStream, Tokenizer};
 
 #[derive(Debug)]
-pub struct Vocabulary {
+pub struct Vocabulary<T: Tokenizer> {
+    tokenizer: T,
     tokens: HashSet<String>,
 }
 
-impl Vocabulary {
+impl<T: Tokenizer> Vocabulary<T> {
     #[must_use]
-    pub fn new(segments: impl Iterator<Item = Segment>) -> Self {
+    pub fn new(segments: impl Iterator<Item = Segment>, tokenizer: T) -> Self {
         let mut vocabulary = Self {
+            tokenizer,
             tokens: HashSet::new(),
         };
         for segment in segments {
@@ -21,15 +23,14 @@ impl Vocabulary {
     }
 
     pub fn add_text(&mut self, text: &str) {
-        let mut tokenizer = SimpleTokenizer::default();
-        let mut stream = tokenizer.token_stream(text);
+        let mut stream = self.tokenizer.token_stream(text);
         stream.process(&mut |token| {
             self.tokens.insert(token.text.clone());
         });
     }
 }
 
-impl IntoIterator for Vocabulary {
+impl<T: Tokenizer> IntoIterator for Vocabulary<T> {
     type Item = String;
     type IntoIter = IntoIter<String>;
 
@@ -40,23 +41,26 @@ impl IntoIterator for Vocabulary {
 
 #[cfg(test)]
 mod tests {
+    use tantivy::tokenizer::WhitespaceTokenizer;
     use super::*;
 
     #[test]
     fn test_construct_from_segments() {
         let segments = vec![
             Segment {
-                uid: String::from("uid1"),
+                uid: String::from("a"),
                 text: String::from("the cat sat"),
             },
             Segment {
-                uid: String::from("uid1"),
+                uid: String::from("b"),
                 text: String::from("on the mat"),
             },
         ];
 
         let mut vocabulary: Vec<String> =
-            Vocabulary::new(segments.into_iter()).into_iter().collect();
+            Vocabulary::new(segments.into_iter(), WhitespaceTokenizer::default())
+                .into_iter()
+                .collect();
         vocabulary.sort();
 
         assert_eq!(vocabulary, vec!("cat", "mat", "on", "sat", "the"));

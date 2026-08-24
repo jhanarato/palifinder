@@ -12,6 +12,7 @@ use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
 use rusqlite::Connection;
+use crate::tokenizer::PaliTokenizer;
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -23,7 +24,7 @@ fn main() -> Result<()> {
                 .filter_map(Result::ok)
                 .flat_map(|text| text.segments);
 
-            let vocabulary = Vocabulary::new(segments);
+            let vocabulary = Vocabulary::new(segments, PaliTokenizer::default());
             let mut conn = Connection::open(args.dpd_db.as_path())?;
             let table = table::stem_table(&mut conn, vocabulary);
             table::save_table(&table, stem_file.as_path())?;
