@@ -7,7 +7,7 @@ pub mod vocabulary;
 
 use crate::dpd::stem;
 use crate::texts::PaliFiles;
-use crate::tokenizer::{PaliChars, PaliTokenizer};
+use crate::tokenizer::PaliTokenizer;
 use crate::vocabulary::Vocabulary;
 use anyhow::Result;
 use clap::Parser;
@@ -35,7 +35,9 @@ fn main() -> Result<()> {
         }
         Command::PaliChars => {
             let tokenizer = PaliTokenizer::default();
-            for char in  tokenizer.alphabet {
+            let mut alphabet: Vec<char> = tokenizer.alphabet.into_iter().collect();
+            alphabet.sort_unstable();
+            for char in  alphabet {
                 print!("{char} ");
             }
         }
@@ -47,9 +49,9 @@ fn main() -> Result<()> {
                     chars.insert(char);
                 }
             }
-            let pali_chars = PaliChars::default();
+            let tokenizer = PaliTokenizer::default();
             for char in chars {
-                if !pali_chars.is_pali(char) {
+                if !tokenizer.alphabet.contains(&char) {
                     print!("{char} ");
                 }
             }
