@@ -14,7 +14,9 @@ pub fn tokenize(segment: &str) -> Vec<String> {
     tokens
 }
 
-/// Tokenize the text by matching Pali alphabet
+/// Tokenize the text by matching the Pali alphabet
+///
+/// Adapted from `tantivy::tokenizer::WhitespaceTokenizer`
 #[derive(Clone)]
 pub struct PaliTokenizer {
     pub alphabet: HashSet<char>,
