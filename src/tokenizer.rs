@@ -14,30 +14,6 @@ pub fn tokenize(segment: &str) -> Vec<String> {
     tokens
 }
 
-pub struct PaliChars {
-    chars: Vec<char>,
-}
-
-impl Default for PaliChars {
-    fn default() -> Self {
-        Self {
-            chars: vec![
-                'A', 'B', 'C', 'D', 'E', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R',
-                'S', 'T', 'U', 'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-                'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'v', 'y', 'Ñ', 'ñ', 'Ā', 'ā',
-                'Ī', 'ī', 'Ū', 'ū', 'Ḍ', 'ḍ', 'ḷ', 'ṁ', 'ṅ', 'ṇ', 'Ṭ', 'ṭ',
-            ],
-        }
-    }
-}
-
-impl PaliChars {
-    #[must_use]
-    pub fn is_pali(&self, char: char) -> bool {
-        self.chars.contains(&char)
-    }
-}
-
 /// Tokenize the text by matching Pali alphabet
 #[derive(Clone)]
 pub struct PaliTokenizer {
