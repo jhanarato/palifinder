@@ -37,8 +37,8 @@ pub enum Command {
         )]
         stem_file: PathBuf,
     },
-    /// Display all characters found in the texts
-    Chars {},
-    /// Tokenizer will skip these characters
-    SplitOn {}
+    /// Show charcters recognised as Pali
+    PaliChars,
+    /// Display all non-Pali characters
+    OtherChars,
 }

@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::str::CharIndices;
 use tantivy::tokenizer::{Token, TokenStream, Tokenizer};
 
@@ -38,16 +39,24 @@ impl PaliChars {
 }
 
 /// Tokenize the text by matching Pali alphabet
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct PaliTokenizer {
+    pub alphabet: HashSet<char>,
     token: Token,
 }
 
-pub struct PaliTokenStream<'a> {
-    more: bool,
-    _text: &'a str,
-    _chars: CharIndices<'a>,
-    token: &'a mut Token,
+impl Default for PaliTokenizer {
+    fn default() -> Self {
+        Self {
+            alphabet: HashSet::from([
+                'A', 'B', 'C', 'D', 'E', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R',
+                'S', 'T', 'U', 'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+                'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'v', 'y', 'Ñ', 'ñ', 'Ā', 'ā',
+                'Ī', 'ī', 'Ū', 'ū', 'Ḍ', 'ḍ', 'ḷ', 'ṁ', 'ṅ', 'ṇ', 'Ṭ', 'ṭ',
+            ]),
+            token: Token::default(),
+        }
+    }
 }
 
 impl Tokenizer for PaliTokenizer {
@@ -61,6 +70,13 @@ impl Tokenizer for PaliTokenizer {
             token: &mut self.token,
         }
     }
+}
+
+pub struct PaliTokenStream<'a> {
+    more: bool,
+    _text: &'a str,
+    _chars: CharIndices<'a>,
+    token: &'a mut Token,
 }
 
 impl PaliTokenStream<'_> {}
@@ -128,10 +144,10 @@ mod tests {
 
     #[test]
     fn test_chars() {
-        let chars = PaliChars::default();
-        assert!(chars.is_pali('A'));
-        assert!(chars.is_pali('Ḍ'));
-        assert!(!chars.is_pali('X'));
-        assert!(!chars.is_pali('?'));
+        let tokenizer = PaliTokenizer::default();
+        assert!(tokenizer.alphabet.contains(&'A'));
+        assert!(tokenizer.alphabet.contains(&'Ḍ'));
+        assert!(!tokenizer.alphabet.contains(&'X'));
+        assert!(!tokenizer.alphabet.contains(&'?'));
     }
 }

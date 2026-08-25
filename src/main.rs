@@ -33,19 +33,13 @@ fn main() -> Result<()> {
                 Err(_) => println!("Stem not found"),
             }
         }
-        Command::Chars {} => {
-            let files = PaliFiles::new(args.texts);
-            let mut chars = BTreeSet::<char>::new();
-            for segment in files.segments() {
-                for char in segment.text.chars() {
-                    chars.insert(char);
-                }
-            }
-            for char in chars {
+        Command::PaliChars => {
+            let tokenizer = PaliTokenizer::default();
+            for char in  tokenizer.alphabet {
                 print!("{char} ");
             }
         }
-        Command::SplitOn {} => {
+        Command::OtherChars => {
             let files = PaliFiles::new(args.texts);
             let mut chars = BTreeSet::<char>::new();
             for segment in files.segments() {
