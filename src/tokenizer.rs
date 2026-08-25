@@ -1,6 +1,18 @@
 use std::str::CharIndices;
 use tantivy::tokenizer::{Token, TokenStream, Tokenizer};
 
+#[must_use]
+pub fn tokenize(segment: &str) -> Vec<String> {
+    let mut tokenizer = PaliTokenizer::default();
+    let mut stream = tokenizer.token_stream(segment);
+    let mut tokens = Vec::new();
+    stream.process(&mut |token| {
+        tokens.push(token.text.clone());
+    });
+
+    tokens
+}
+
 pub struct PaliChars {
     chars: Vec<char>,
 }
@@ -23,18 +35,6 @@ impl PaliChars {
     pub fn is_pali(&self, char: char) -> bool {
         self.chars.contains(&char)
     }
-}
-
-#[must_use]
-pub fn tokenize(segment: &str) -> Vec<String> {
-    let mut tokenizer = PaliTokenizer::default();
-    let mut stream = tokenizer.token_stream(segment);
-    let mut tokens = Vec::new();
-    stream.process(&mut |token| {
-        tokens.push(token.text.clone());
-    });
-
-    tokens
 }
 
 /// Tokenize the text by matching Pali alphabet
