@@ -40,36 +40,45 @@ impl Tokenizer for PaliTokenizer {
     fn token_stream<'a>(&'a mut self, text: &'a str) -> PaliTokenStream<'a> {
         self.token.reset();
         PaliTokenStream {
-            more: true,
-            _text: text,
-            _chars: text.char_indices(),
+            alphabet: &self.alphabet,
+            text,
+            chars: text.char_indices(),
             token: &mut self.token,
         }
     }
 }
 
 pub struct PaliTokenStream<'a> {
-    more: bool,
-    _text: &'a str,
-    _chars: CharIndices<'a>,
+    alphabet: &'a HashSet<char>,
+    text: &'a str,
+    chars: CharIndices<'a>,
     token: &'a mut Token,
 }
 
-impl PaliTokenStream<'_> {}
+impl PaliTokenStream<'_> {
+    fn search_token_end(&mut self) -> usize {
+        (&mut self.chars)
+            .filter(|(_, c)| !self.alphabet.contains(c))
+            .map(|(offset, _)| offset)
+            .next()
+            .unwrap_or(self.text.len())
+    }
+}
 
 impl TokenStream for PaliTokenStream<'_> {
     fn advance(&mut self) -> bool {
         self.token.text.clear();
-        self.token.position = 0;
-        self.token.offset_from = 0;
-        self.token.offset_to = 7;
-        self.token.text = String::from("bhagavā");
-        if self.more {
-            self.more = false;
-            true
-        } else {
-            false
+        self.token.position = self.token.position.wrapping_add(1);
+        while let Some((offset_from, c)) = self.chars.next() {
+            if self.alphabet.contains(&c) {
+                let offset_to = self.search_token_end();
+                self.token.offset_from = offset_from;
+                self.token.offset_to = offset_to;
+                self.token.text.push_str(&self.text[offset_from..offset_to]);
+                return true
+            }
         }
+        false
     }
 
     fn token(&self) -> &Token {
@@ -112,18 +121,11 @@ mod tests {
     }
 
     #[test]
-    fn test_stream_yields_a_token() {
-        let tokens = token_stream_helper("bhagavā");
-        assert_eq!(tokens.len(), 1);
-        assert_token(&tokens[0], 0, "bhagavā", 0, 7);
-    }
-
-    #[test]
-    fn test_chars() {
-        let tokenizer = PaliTokenizer::default();
-        assert!(tokenizer.alphabet.contains(&'A'));
-        assert!(tokenizer.alphabet.contains(&'Ḍ'));
-        assert!(!tokenizer.alphabet.contains(&'X'));
-        assert!(!tokenizer.alphabet.contains(&'?'));
+    fn test_tokenize_pali_words() {
+        let tokens = token_stream_helper("Evaṁ me sutaṁ—");
+        assert_eq!(tokens.len(), 3);
+        assert_token(&tokens[0], 0, "Evaṁ", 0, 6);
+        assert_token(&tokens[1], 1, "me", 7, 9);
+        assert_token(&tokens[2], 2, "sutaṁ", 10, 17);
     }
 }
