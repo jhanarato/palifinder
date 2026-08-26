@@ -14,13 +14,17 @@ use clap::Parser;
 use commands::{Arguments, Command};
 use rusqlite::Connection;
 use std::collections::BTreeSet;
+use tantivy::tokenizer::{LowerCaser, TextAnalyzer};
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
     match args.command {
         Command::StemTable { stem_file } => {
             let files = PaliFiles::new(args.texts);
-            let vocabulary = Vocabulary::new(files.segments(), PaliTokenizer::default());
+            let analyzer = TextAnalyzer::builder(PaliTokenizer::default())
+                .filter(LowerCaser)
+                .build();
+            let vocabulary = Vocabulary::new(files.segments(), analyzer);
             let mut conn = Connection::open(args.dpd_db.as_path())?;
             let table = table::stem_table(&mut conn, vocabulary);
             table::save_table(&table, stem_file.as_path())?;
@@ -37,7 +41,7 @@ fn main() -> Result<()> {
             let tokenizer = PaliTokenizer::default();
             let mut alphabet: Vec<char> = tokenizer.alphabet.into_iter().collect();
             alphabet.sort_unstable();
-            for char in  alphabet {
+            for char in alphabet {
                 print!("{char} ");
             }
         }

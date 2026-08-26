@@ -1,19 +1,18 @@
 use crate::texts::Segment;
 use std::collections::HashSet;
 use std::collections::hash_set::IntoIter;
-use tantivy::tokenizer::{TokenStream, Tokenizer};
+use tantivy::tokenizer::{TextAnalyzer, TokenStream};
 
-#[derive(Debug)]
-pub struct Vocabulary<T: Tokenizer> {
-    tokenizer: T,
+pub struct Vocabulary {
+    analyzer: TextAnalyzer,
     tokens: HashSet<String>,
 }
 
-impl<T: Tokenizer> Vocabulary<T> {
+impl Vocabulary {
     #[must_use]
-    pub fn new(segments: impl Iterator<Item = Segment>, tokenizer: T) -> Self {
+    pub fn new(segments: impl Iterator<Item = Segment>, analyzer: TextAnalyzer) -> Self {
         let mut vocabulary = Self {
-            tokenizer,
+            analyzer,
             tokens: HashSet::new(),
         };
         for segment in segments {
@@ -23,14 +22,14 @@ impl<T: Tokenizer> Vocabulary<T> {
     }
 
     pub fn add_text(&mut self, text: &str) {
-        let mut stream = self.tokenizer.token_stream(text);
+        let mut stream = self.analyzer.token_stream(text);
         stream.process(&mut |token| {
             self.tokens.insert(token.text.clone());
         });
     }
 }
 
-impl<T: Tokenizer> IntoIterator for Vocabulary<T> {
+impl IntoIterator for Vocabulary {
     type Item = String;
     type IntoIter = IntoIter<String>;
 
@@ -41,8 +40,8 @@ impl<T: Tokenizer> IntoIterator for Vocabulary<T> {
 
 #[cfg(test)]
 mod tests {
-    use tantivy::tokenizer::WhitespaceTokenizer;
     use super::*;
+    use tantivy::tokenizer::WhitespaceTokenizer;
 
     #[test]
     fn test_construct_from_segments() {
@@ -57,10 +56,11 @@ mod tests {
             },
         ];
 
-        let mut vocabulary: Vec<String> =
-            Vocabulary::new(segments.into_iter(), WhitespaceTokenizer::default())
-                .into_iter()
-                .collect();
+        let analyzer = TextAnalyzer::builder(WhitespaceTokenizer::default()).build();
+
+        let mut vocabulary: Vec<String> = Vocabulary::new(segments.into_iter(), analyzer)
+            .into_iter()
+            .collect();
         vocabulary.sort();
 
         assert_eq!(vocabulary, vec!("cat", "mat", "on", "sat", "the"));
