@@ -5,7 +5,7 @@ pub mod texts;
 pub mod tokenizer;
 pub mod vocabulary;
 
-use crate::dpd::stem;
+use crate::dpd::Dictionary;
 use crate::texts::PaliFiles;
 use crate::tokenizer::PaliTokenizer;
 use crate::vocabulary::Vocabulary;
@@ -15,6 +15,7 @@ use commands::{Arguments, Command};
 use rusqlite::Connection;
 use std::collections::BTreeSet;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer};
+use crate::table::stem_table;
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -25,13 +26,15 @@ fn main() -> Result<()> {
                 .filter(LowerCaser)
                 .build();
             let vocabulary = Vocabulary::new(files.segments(), analyzer);
-            let mut conn = Connection::open(args.dpd_db.as_path())?;
-            let table = table::stem_table(&mut conn, vocabulary);
+            let conn = Connection::open(args.dpd_db.as_path())?;
+            let dict = Dictionary::from(conn);
+            let table = stem_table(&dict, vocabulary);
             table::save_table(&table, stem_file.as_path())?;
         }
         Command::Stem { word } => {
-            let mut conn = Connection::open(args.dpd_db.as_path())?;
-            let stem = stem(&mut conn, word.as_str());
+            let conn = Connection::open(args.dpd_db.as_path())?;
+            let dict = Dictionary::from(conn);
+            let stem = dict.stem(word.as_str());
             match stem {
                 Ok(stem) => println!("{stem}"),
                 Err(_) => println!("Stem not found"),

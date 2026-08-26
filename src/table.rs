@@ -1,20 +1,19 @@
-use crate::dpd;
+use crate::dpd::Dictionary;
 use crate::vocabulary::Vocabulary;
 use anyhow::Result;
 use csv::Writer;
-use rusqlite::Connection;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::Path;
 
 #[allow(clippy::implicit_hasher)]
 pub fn stem_table(
-    conn: &mut Connection,
+    dictionary: &Dictionary,
     vocabulary: Vocabulary,
 ) -> HashMap<String, Option<String>> {
     let mut table: HashMap<String, Option<String>> = HashMap::new();
     for term in vocabulary {
-        let term_stem = dpd::stem(conn, term.as_str());
+        let term_stem = dictionary.stem(term.as_str());
         match term_stem {
             Ok(stem) => {
                 table.insert(term.clone(), Some(stem));
