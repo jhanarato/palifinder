@@ -28,6 +28,11 @@ pub enum Command {
         #[arg(help = "The Pali word to stem")]
         word: String,
     },
+    /// Show headword keys for term lookup.
+    DpdLookup {
+        #[arg(help = "Term to look for")]
+        term: String,
+    },
     /// Save the lemmas and stems for all texts.
     StemTable {
         #[arg(

@@ -40,6 +40,23 @@ fn main() -> Result<()> {
                 Err(_) => println!("Stem not found"),
             }
         }
+        Command::DpdLookup { term } => {
+            let conn = Connection::open(args.dpd_db.as_path())?;
+            let dict = Dictionary::from(conn);
+            let ids = dict.lookup(term.as_str());
+            match ids {
+                Ok(ids) => {
+                    if ids.is_empty() {
+                        println!("Nothing found");
+                    }
+                    for id in ids {
+                        println!("{id}");
+                    }
+
+                },
+                Err(e) => println!("An error occured: {e:#?}"),
+            }
+        }
         Command::PaliChars => {
             let tokenizer = PaliTokenizer::default();
             let mut alphabet: Vec<char> = tokenizer.alphabet.into_iter().collect();
