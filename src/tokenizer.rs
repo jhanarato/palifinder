@@ -1,11 +1,14 @@
 use std::collections::HashSet;
 use std::str::CharIndices;
-use tantivy::tokenizer::{Token, TokenStream, Tokenizer};
+use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream, Tokenizer};
 
 #[must_use]
 pub fn tokenize(segment: &str) -> Vec<String> {
-    let mut tokenizer = PaliTokenizer::default();
-    let mut stream = tokenizer.token_stream(segment);
+    let mut analyzer = TextAnalyzer::builder(PaliTokenizer::default())
+        .filter(LowerCaser)
+        .build();
+
+    let mut stream = analyzer.token_stream(segment);
     let mut tokens = Vec::new();
     stream.process(&mut |token| {
         tokens.push(token.text.clone());
@@ -77,7 +80,7 @@ impl TokenStream for PaliTokenStream<'_> {
                 self.token.offset_from = offset_from;
                 self.token.offset_to = offset_to;
                 self.token.text.push_str(&self.text[offset_from..offset_to]);
-                return true
+                return true;
             }
         }
         false
@@ -129,5 +132,11 @@ mod tests {
         assert_token(&tokens[0], 0, "Evaṁ", 0, 6);
         assert_token(&tokens[1], 1, "me", 7, 9);
         assert_token(&tokens[2], 2, "sutaṁ", 10, 17);
+    }
+
+    #[test]
+    fn test_tokenizer_lowers_case() {
+        let tokens = tokenize("Evaṁ me sutaṁ—");
+        assert_eq!(tokens, vec!("evaṁ", "me", "sutaṁ"));
     }
 }
