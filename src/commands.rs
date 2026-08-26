@@ -23,10 +23,10 @@ pub struct Arguments {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
-    /// Print the stem of a Pali word
+    /// Display the possible stems of a given term
     Stem {
-        #[arg(help = "The Pali word to stem")]
-        word: String,
+        #[arg(help = "The term to stem")]
+        term: String,
     },
     /// Show headword keys for term lookup.
     DpdLookup {

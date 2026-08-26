@@ -6,6 +6,7 @@ pub mod tokenizer;
 pub mod vocabulary;
 
 use crate::dpd::Dictionary;
+use crate::table::stem_table;
 use crate::texts::PaliFiles;
 use crate::tokenizer::PaliTokenizer;
 use crate::vocabulary::Vocabulary;
@@ -15,7 +16,6 @@ use commands::{Arguments, Command};
 use rusqlite::Connection;
 use std::collections::BTreeSet;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer};
-use crate::table::stem_table;
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -31,13 +31,21 @@ fn main() -> Result<()> {
             let table = stem_table(&dict, vocabulary);
             table::save_table(&table, stem_file.as_path())?;
         }
-        Command::Stem { word } => {
+        Command::Stem { term } => {
             let conn = Connection::open(args.dpd_db.as_path())?;
             let dict = Dictionary::from(conn);
-            let stem = dict.stem(word.as_str());
-            match stem {
-                Ok(stem) => println!("{stem}"),
-                Err(_) => println!("Stem not found"),
+            let stems = dict.stems(term.as_str());
+            match stems {
+                Ok(stems) => {
+                    if stems.is_empty() {
+                        println!("No stem found");
+                    } else {
+                        for stem in stems {
+                            println!("{stem}");
+                        }
+                    }
+                }
+                Err(e) => println!("An error occured: {e:#?}"),
             }
         }
         Command::DpdLookup { term } => {
@@ -52,8 +60,7 @@ fn main() -> Result<()> {
                     for id in ids {
                         println!("{id}");
                     }
-
-                },
+                }
                 Err(e) => println!("An error occured: {e:#?}"),
             }
         }

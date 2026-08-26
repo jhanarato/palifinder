@@ -25,6 +25,17 @@ impl From<Connection> for Dictionary {
 
 impl Dictionary {
     #[allow(clippy::missing_errors_doc)]
+    pub fn stems(&self, term: &str) ->  Result<Vec<String>> {
+        let mut stems: Vec<String> = Vec::new();
+        let ids = self.lookup(term)?;
+        for id in ids {
+            let stem = self.stem_for_id(id)?;
+            stems.push(stem);
+        }
+        Ok(stems)
+    }
+
+    #[allow(clippy::missing_errors_doc)]
     pub fn stem(&self, term: &str) -> Result<String> {
         let stem = self.connection.query_one(
             "SELECT stem from dpd_headwords where lemma_1 == (?1)",
@@ -35,13 +46,23 @@ impl Dictionary {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub fn lookup(&self, term: &str) -> Result<Vec<usize>> {
+    pub fn stem_for_id(&self, headword_id: u32) -> Result<String>{
+        let stem = self.connection.query_one(
+            "SELECT stem from dpd_headwords where id == (?1)",
+            [headword_id],
+            |row| Ok(HeadwordFields { stem: row.get(0)? }),
+        )?;
+        Ok(stem.stem)
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub fn lookup(&self, term: &str) -> Result<Vec<u32>> {
         let lookup = self.connection.query_one(
             "SELECT headwords FROM lookup WHERE lookup_key == (?1) ",
             [term],
             |row| Ok(LookupFields { headwords: row.get(0)? }),
         )?;
-        let ids: Vec<usize> = serde_json::from_str(lookup.headwords.as_str())?;
+        let ids: Vec<u32> = serde_json::from_str(lookup.headwords.as_str())?;
         Ok(ids)
     }
 }
