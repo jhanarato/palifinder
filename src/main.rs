@@ -36,16 +36,9 @@ fn main() -> Result<()> {
             let dict = Dictionary::from(conn);
             let stems = dict.stems(term.as_str());
             match stems {
-                Ok(stems) => {
-                    if stems.is_empty() {
-                        println!("No stem found");
-                    } else {
-                        for stem in stems {
-                            println!("{stem}");
-                        }
-                    }
-                }
                 Err(e) => println!("An error occured: {e:#?}"),
+                Ok(stems) if stems.is_empty() => println!("No stem found"),
+                Ok(stems) => stems.iter().for_each(|stem| println!("{stem}")),
             }
         }
         Command::DpdLookup { term } => {
