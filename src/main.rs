@@ -53,15 +53,9 @@ fn main() -> Result<()> {
             let dict = Dictionary::from(conn);
             let ids = dict.lookup(term.as_str());
             match ids {
-                Ok(ids) => {
-                    if ids.is_empty() {
-                        println!("Nothing found");
-                    }
-                    for id in ids {
-                        println!("{id}");
-                    }
-                }
                 Err(e) => println!("An error occured: {e:#?}"),
+                Ok(ids) if ids.is_empty() => println!("Nothing found"),
+                Ok(ids) => ids.iter().for_each(|id| println!("{id}")),
             }
         }
         Command::PaliChars => {
