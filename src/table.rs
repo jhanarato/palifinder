@@ -4,27 +4,7 @@ use anyhow::Result;
 use csv::Writer;
 use serde::Serialize;
 use std::collections::HashMap;
-use std::path::Path;
-
-#[allow(clippy::implicit_hasher)]
-pub fn stem_table(
-    dictionary: &Dictionary,
-    vocabulary: Vocabulary,
-) -> HashMap<String, Option<String>> {
-    let mut table: HashMap<String, Option<String>> = HashMap::new();
-    for term in vocabulary {
-        let term_stem = dictionary.stem(term.as_str());
-        match term_stem {
-            Ok(stem) => {
-                table.insert(term.clone(), Some(stem));
-            }
-            Err(_) => {
-                table.insert(term.clone(), None);
-            }
-        }
-    }
-    table
-}
+use std::path::PathBuf;
 
 #[derive(Serialize)]
 struct TermStem {
@@ -32,15 +12,39 @@ struct TermStem {
     stem: Option<String>,
 }
 
-#[allow(clippy::implicit_hasher, clippy::missing_errors_doc)]
-pub fn save_table(table: &HashMap<String, Option<String>>, path: &Path) -> Result<()> {
-    let mut writer = Writer::from_path(path)?;
-    for (key, value) in table {
-        let term_stem = TermStem {
-            term: key.clone(),
-            stem: value.clone(),
-        };
-        writer.serialize(term_stem)?;
+pub struct TermStems {
+    entries: HashMap<String, Option<String>>,
+}
+
+impl TermStems {
+    pub fn new(vocabulary: Vocabulary, dictionary: &Dictionary) -> Self {
+        let mut entries: HashMap<String, Option<String>> = HashMap::new();
+        for term in vocabulary {
+            let stems = dictionary.stems(term.as_str());
+            match stems {
+                Err(_) => entries.insert(term.clone(), None),
+                Ok(stems) => {
+                    match stems.first() {
+                        Some(stem) => entries.insert(term.clone(), Some(stem.clone())),
+                        None => entries.insert(term.clone(), None),
+                    }
+                }
+            };
+        }
+
+        Self { entries }
     }
-    Ok(())
+
+    #[allow(clippy::missing_errors_doc)]
+    pub fn save_as(&self, path: &PathBuf) -> Result<()> {
+        let mut writer = Writer::from_path(path)?;
+        for (key, value) in &self.entries {
+            let term_stem = TermStem {
+                term: key.clone(),
+                stem: value.clone(),
+            };
+            writer.serialize(term_stem)?;
+        }
+        Ok(())
+    }
 }

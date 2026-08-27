@@ -6,7 +6,7 @@ pub mod tokenizer;
 pub mod vocabulary;
 
 use crate::dpd::Dictionary;
-use crate::table::stem_table;
+use crate::table::TermStems;
 use crate::texts::PaliFiles;
 use crate::tokenizer::PaliTokenizer;
 use crate::vocabulary::Vocabulary;
@@ -27,9 +27,9 @@ fn main() -> Result<()> {
                 .build();
             let vocabulary = Vocabulary::new(files.segments(), analyzer);
             let conn = Connection::open(args.dpd_db.as_path())?;
-            let dict = Dictionary::from(conn);
-            let table = stem_table(&dict, vocabulary);
-            table::save_table(&table, stem_file.as_path())?;
+            let dictionary = Dictionary::from(conn);
+            let term_stems = TermStems::new(vocabulary, &dictionary);
+            term_stems.save_as(&stem_file)?;
         }
         Command::Stem { term } => {
             let conn = Connection::open(args.dpd_db.as_path())?;
