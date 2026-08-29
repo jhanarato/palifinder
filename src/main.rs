@@ -4,6 +4,9 @@ pub mod table;
 pub mod texts;
 pub mod tokenizer;
 pub mod vocabulary;
+mod dict_stemmer;
+#[cfg(test)]
+pub mod tests;
 
 use crate::dpd::Dictionary;
 use crate::table::TermStems;

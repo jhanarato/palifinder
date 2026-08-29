@@ -99,20 +99,7 @@ impl TokenStream for PaliTokenStream<'_> {
 mod tests {
     use super::*;
     use tantivy::tokenizer::TextAnalyzer;
-
-    /// Helper function for testing token output. Copied from the `tantivy::tokenizer` tests.
-    fn assert_token(token: &Token, position: usize, text: &str, from: usize, to: usize) {
-        assert_eq!(
-            token.position, position,
-            "expected position {position} but {token:?}"
-        );
-        assert_eq!(token.text, text, "expected text {text} but {token:?}");
-        assert_eq!(
-            token.offset_from, from,
-            "expected offset_from {from} but {token:?}"
-        );
-        assert_eq!(token.offset_to, to, "expected offset_to {to} but {token:?}");
-    }
+    use crate::tests::assert_token;
 
     fn token_stream_helper(text: &str) -> Vec<Token> {
         let mut a = TextAnalyzer::from(PaliTokenizer::default());
