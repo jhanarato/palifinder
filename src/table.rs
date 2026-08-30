@@ -14,7 +14,7 @@ pub struct TermStem {
 
 #[derive(Clone)]
 pub struct TermStems {
-    entries: HashMap<String, Option<String>>,
+    pub entries: HashMap<String, Option<String>>,
 }
 
 impl TermStems {

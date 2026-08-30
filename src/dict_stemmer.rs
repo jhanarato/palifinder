@@ -19,6 +19,7 @@ impl TokenFilter for PaliDictStemmer {
     fn transform<T: Tokenizer>(self, tokenizer: T) -> StemmerFilter<T> {
         StemmerFilter {
             inner: tokenizer,
+            term_stems: self.term_stems,
         }
     }
 }
@@ -28,33 +29,38 @@ impl TokenFilter for PaliDictStemmer {
 #[derive(Clone)]
 pub struct StemmerFilter<T> {
     inner: T,
+    term_stems: TermStems,
 }
 
 impl<T: Tokenizer> Tokenizer for StemmerFilter<T> {
-    type TokenStream<'a> = StemmerTokenStream<T::TokenStream<'a>>;
+    type TokenStream<'a> = StemmerTokenStream<'a, T::TokenStream<'a>>;
 
     fn token_stream<'a>(&'a mut self, text: &'a str) -> Self::TokenStream<'a> {
         StemmerTokenStream {
             tail: self.inner.token_stream(text),
-            buffer: String::new()
+            buffer: String::new(),
+            term_stems: &mut self.term_stems,
         }
     }
 }
 
 
 #[allow(unused)]
-pub struct StemmerTokenStream<T> {
+pub struct StemmerTokenStream<'a, T> {
     tail: T,
     buffer: String,
+    term_stems: &'a mut TermStems,
 }
 
-impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
+impl<T: TokenStream> TokenStream for StemmerTokenStream<'_, T> {
     fn advance(&mut self) -> bool {
         if !self.tail.advance() {
             return false;
         }
         let token = self.tail.token_mut();
-        token.text = String::from("Foobar");
+        if let Some(entry) = self.term_stems.entries.get(&token.text) && let Some(stem) = entry {
+            token.text = stem.clone();
+        }
         true
     }
 
@@ -112,16 +118,16 @@ mod tests {
     #[test]
     fn test_changes_token_to_stem_when_available() {
         let tokens = token_stream_helper("jumping jumped frog");
-        assert_token(&tokens[0], 0, "jump", 0, 0);
-        assert_token(&tokens[0], 0, "jump", 0, 0);
-        assert_token(&tokens[0], 0, "frog", 0, 0);
+        assert_token(&tokens[0], 0, "jump", 0, 7);
+        assert_token(&tokens[1], 1, "jump", 8, 14);
+        assert_token(&tokens[2], 2, "frog", 15, 19);
     }
 
     #[test]
     fn test_token_unchanged_when_stem_unavailable() {
         let tokens = token_stream_helper("abc xyz frog");
-        assert_token(&tokens[0], 0, "abc", 0, 0);
-        assert_token(&tokens[0], 0, "xyz", 0, 0);
-        assert_token(&tokens[0], 0, "frog", 0, 0);
+        assert_token(&tokens[0], 0, "abc", 0, 3);
+        assert_token(&tokens[1], 1, "xyz", 4, 7);
+        assert_token(&tokens[2], 2, "frog", 8, 12);
     }
 }
