@@ -32,7 +32,7 @@ fn main() -> Result<()> {
             let conn = Connection::open(args.dpd_db.as_path())?;
             let dictionary = Dictionary::from(conn);
             let term_stems = TermStems::new(vocabulary, &dictionary);
-            term_stems.save_as(&stem_file)?;
+            term_stems.save(&stem_file)?;
         }
         Command::Stem { term } => {
             let conn = Connection::open(args.dpd_db.as_path())?;

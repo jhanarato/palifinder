@@ -2,11 +2,11 @@ use crate::dpd::Dictionary;
 use crate::vocabulary::Vocabulary;
 use anyhow::Result;
 use csv::Writer;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::Path;
 
-#[derive(Clone, Debug, PartialOrd, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialOrd, PartialEq, Serialize, Deserialize)]
 pub struct TermStem {
     pub term: String,
     pub dpd_stem: Option<String>,
@@ -35,7 +35,7 @@ impl TermStems {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub fn save_as(&self, path: &PathBuf) -> Result<()> {
+    pub fn save(&self, path: &Path) -> Result<()> {
         let mut writer = Writer::from_path(path)?;
         for (key, value) in &self.entries {
             let term_stem = TermStem {
