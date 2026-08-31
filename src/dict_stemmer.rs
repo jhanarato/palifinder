@@ -1,15 +1,28 @@
-use crate::table::TermStems;
+use crate::table::TermStem;
+use anyhow::Error;
+use csv::Reader;
+use std::collections::HashMap;
 use tantivy::tokenizer::{Token, TokenFilter, TokenStream, Tokenizer};
 
 #[allow(unused)]
 #[derive(Clone)]
 pub struct PaliDictStemmer {
-    term_stems: TermStems,
+    term_stems: HashMap<String, String>,
 }
 
-impl From<TermStems> for PaliDictStemmer {
-    fn from(term_stems: TermStems) -> Self {
-        Self { term_stems }
+impl TryFrom<&str> for PaliDictStemmer {
+    type Error = Error;
+
+    fn try_from(data: &str) -> Result<Self, Self::Error> {
+        let mut term_stems: HashMap<String, String> = HashMap::new();
+        let mut reader = Reader::from_reader(data.as_bytes());
+        for record in reader.deserialize() {
+            let term_stem: TermStem = record?;
+            if let Some(stem) = term_stem.dpd_stem {
+                term_stems.insert(term_stem.term, stem);
+            }
+        }
+        Ok(Self { term_stems })
     }
 }
 
@@ -24,12 +37,11 @@ impl TokenFilter for PaliDictStemmer {
     }
 }
 
-
 #[allow(unused)]
 #[derive(Clone)]
 pub struct StemmerFilter<T> {
     inner: T,
-    term_stems: TermStems,
+    term_stems: HashMap<String, String>,
 }
 
 impl<T: Tokenizer> Tokenizer for StemmerFilter<T> {
@@ -44,12 +56,11 @@ impl<T: Tokenizer> Tokenizer for StemmerFilter<T> {
     }
 }
 
-
 #[allow(unused)]
 pub struct StemmerTokenStream<'a, T> {
     tail: T,
     buffer: String,
-    term_stems: &'a mut TermStems,
+    term_stems: &'a mut HashMap<String, String>,
 }
 
 impl<T: TokenStream> TokenStream for StemmerTokenStream<'_, T> {
@@ -58,7 +69,8 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<'_, T> {
             return false;
         }
         let token = self.tail.token_mut();
-        if let Some(entry) = self.term_stems.entries.get(&token.text) && let Some(stem) = entry {
+        if let Some(stem) = self.term_stems.get(&token.text)
+        {
             token.text = stem.clone();
         }
         true
@@ -76,34 +88,19 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<'_, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::table::{TermStem, TermStems};
     use crate::tests::assert_token;
     use tantivy::tokenizer::{TextAnalyzer, Token, WhitespaceTokenizer};
 
-    fn term_stems() -> TermStems {
-        TermStems::from(vec![
-            TermStem {
-                term: String::from("jumped"),
-                dpd_stem: Some(String::from("jump")),
-            },
-            TermStem {
-                term: String::from("jumping"),
-                dpd_stem: Some(String::from("jump")),
-            },
-            TermStem {
-                term: String::from("frog"),
-                dpd_stem: Some(String::from("frog")),
-            },
-            TermStem {
-                term: String::from("xyz"),
-                dpd_stem: None,
-            },
-        ])
-    }
+    const STEM_DATA: &str = "\
+term,dpd_stem
+jumped,jump
+jumping,jump
+frog,";
 
     fn token_stream_helper(text: &str) -> Vec<Token> {
+        let stemmer = PaliDictStemmer::try_from(STEM_DATA).unwrap();
         let mut token_stream = TextAnalyzer::builder(WhitespaceTokenizer::default())
-            .filter(PaliDictStemmer::from(term_stems()))
+            .filter(stemmer)
             .build();
 
         let mut token_stream = token_stream.token_stream(text);
@@ -113,6 +110,14 @@ mod tests {
         };
         token_stream.process(&mut add_token);
         tokens
+    }
+
+    #[test]
+    fn test_from_str() {
+        let stemmer = PaliDictStemmer::try_from(STEM_DATA).unwrap();
+        assert_eq!(stemmer.term_stems.get("jumped").unwrap(), "jump");
+        assert_eq!(stemmer.term_stems.get("jumping").unwrap(), "jump");
+        assert_eq!(stemmer.term_stems.get("frog"), None);
     }
 
     #[test]

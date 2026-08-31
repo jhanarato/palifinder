@@ -6,7 +6,7 @@ The main objectives:
 
 - [X] Extract the vocabulary of the Pāli tipitika using the data from SuttaCentral.
 - [X] Find the stem for each word using the Digital Pāli Dictionary. (50% coverage so far)
-- [ ] Create a dictionary stemmer.
+- [X] Create a dictionary stemmer.
 - [ ] Create an algorithmic stemmer in Snowball.
 - [ ] Test the performance of the algorithmic stemmer against the "perfect" dictionary stemmer.
 - [ ] Investigate RAM usage of dictionary stemmer.
