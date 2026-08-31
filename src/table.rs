@@ -9,7 +9,7 @@ use std::path::PathBuf;
 #[derive(Clone, Debug, PartialOrd, PartialEq, Serialize)]
 pub struct TermStem {
     pub term: String,
-    pub stem: Option<String>,
+    pub dpd_stem: Option<String>,
 }
 
 #[derive(Clone)]
@@ -40,7 +40,7 @@ impl TermStems {
         for (key, value) in &self.entries {
             let term_stem = TermStem {
                 term: key.clone(),
-                stem: value.clone(),
+                dpd_stem: value.clone(),
             };
             writer.serialize(term_stem)?;
         }
@@ -52,7 +52,7 @@ impl From<Vec<TermStem>> for TermStems {
     fn from(term_stems: Vec<TermStem>) -> Self {
         let mut entries = HashMap::new();
         for term_stem in term_stems {
-            entries.insert(term_stem.term, term_stem.stem);
+            entries.insert(term_stem.term, term_stem.dpd_stem);
         }
         Self { entries }
     }
@@ -66,7 +66,7 @@ mod tests {
     fn test_from_term_stems() {
         let term_stems = TermStems::from(vec![TermStem {
             term: String::from("jumped"),
-            stem: Some(String::from("jump")),
+            dpd_stem: Some(String::from("jump")),
         }]);
 
         assert_eq!(term_stems.entries.len(), 1);

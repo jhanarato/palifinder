@@ -84,19 +84,19 @@ mod tests {
         TermStems::from(vec![
             TermStem {
                 term: String::from("jumped"),
-                stem: Some(String::from("jump")),
+                dpd_stem: Some(String::from("jump")),
             },
             TermStem {
                 term: String::from("jumping"),
-                stem: Some(String::from("jump")),
+                dpd_stem: Some(String::from("jump")),
             },
             TermStem {
                 term: String::from("frog"),
-                stem: Some(String::from("frog")),
+                dpd_stem: Some(String::from("frog")),
             },
             TermStem {
                 term: String::from("xyz"),
-                stem: None,
+                dpd_stem: None,
             },
         ])
     }
