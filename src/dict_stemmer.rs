@@ -2,6 +2,7 @@ use crate::table::TermStem;
 use anyhow::Error;
 use csv::Reader;
 use std::collections::HashMap;
+use std::fs::File;
 use tantivy::tokenizer::{Token, TokenFilter, TokenStream, Tokenizer};
 
 #[allow(unused)]
@@ -14,6 +15,21 @@ impl TryFrom<Reader<&[u8]>> for DictionaryStemmer {
     type Error = Error;
 
     fn try_from(mut reader: Reader<&[u8]>) -> Result<Self, Self::Error> {
+        let mut term_stems: HashMap<String, String> = HashMap::new();
+        for record in reader.deserialize() {
+            let term_stem: TermStem = record?;
+            if let Some(stem) = term_stem.dpd_stem {
+                term_stems.insert(term_stem.term, stem);
+            }
+        }
+        Ok(Self { term_stems })
+    }
+}
+
+impl TryFrom<Reader<File>> for DictionaryStemmer {
+    type Error = Error;
+
+    fn try_from(mut reader: Reader<File>) -> Result<Self, Self::Error> {
         let mut term_stems: HashMap<String, String> = HashMap::new();
         for record in reader.deserialize() {
             let term_stem: TermStem = record?;

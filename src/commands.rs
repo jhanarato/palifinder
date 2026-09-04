@@ -31,9 +31,9 @@ pub struct Arguments {
 #[derive(Subcommand, Debug)]
 pub enum Command {
     /// Display the possible stems of a given term
-    Stem {
-        #[arg(help = "The term to stem")]
-        term: String,
+    Analyze {
+        #[arg(help = "The text to be analyzed")]
+        text: String,
     },
     /// Show headword keys for term lookup.
     DpdLookup {

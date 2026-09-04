@@ -8,6 +8,7 @@ mod dict_stemmer;
 #[cfg(test)]
 pub mod tests;
 
+use crate::dict_stemmer::DictionaryStemmer;
 use crate::dpd::Dictionary;
 use crate::table::TermStems;
 use crate::texts::PaliFiles;
@@ -16,9 +17,10 @@ use crate::vocabulary::Vocabulary;
 use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
+use csv::Reader;
 use rusqlite::Connection;
 use std::collections::BTreeSet;
-use tantivy::tokenizer::{LowerCaser, TextAnalyzer};
+use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -34,15 +36,15 @@ fn main() -> Result<()> {
             let term_stems = TermStems::new(vocabulary, &dictionary);
             term_stems.save(&args.stem_file)?;
         }
-        Command::Stem { term } => {
-            let conn = Connection::open(args.dpd_db.as_path())?;
-            let dict = Dictionary::from(conn);
-            let stems = dict.stems(term.as_str());
-            match stems {
-                Err(e) => println!("An error occured: {e:#?}"),
-                Ok(stems) if stems.is_empty() => println!("No stem found"),
-                Ok(stems) => stems.iter().for_each(|stem| println!("{stem}")),
-            }
+        Command::Analyze { text } => {
+            let reader = Reader::from_path(args.stem_file)?;
+            let stemmer = DictionaryStemmer::try_from(reader)?;
+            let mut analyzer = TextAnalyzer::builder(PaliTokenizer::default())
+                .filter(LowerCaser)
+                .filter(stemmer)
+                .build();
+            let mut token_stream = analyzer.token_stream(text.as_str());
+            token_stream.process(&mut |token: &Token| { println!("{0}", token.text)});
         }
         Command::DpdLookup { term } => {
             let conn = Connection::open(args.dpd_db.as_path())?;
