@@ -6,11 +6,11 @@ use tantivy::tokenizer::{Token, TokenFilter, TokenStream, Tokenizer};
 
 #[allow(unused)]
 #[derive(Clone)]
-pub struct PaliDictStemmer {
+pub struct DictionaryStemmer {
     term_stems: HashMap<String, String>,
 }
 
-impl TryFrom<&str> for PaliDictStemmer {
+impl TryFrom<&str> for DictionaryStemmer {
     type Error = Error;
 
     fn try_from(data: &str) -> Result<Self, Self::Error> {
@@ -26,7 +26,7 @@ impl TryFrom<&str> for PaliDictStemmer {
     }
 }
 
-impl TokenFilter for PaliDictStemmer {
+impl TokenFilter for DictionaryStemmer {
     type Tokenizer<T: Tokenizer> = StemmerFilter<T>;
 
     fn transform<T: Tokenizer>(self, tokenizer: T) -> StemmerFilter<T> {
@@ -98,7 +98,7 @@ jumping,jump
 frog,";
 
     fn token_stream_helper(text: &str) -> Vec<Token> {
-        let stemmer = PaliDictStemmer::try_from(STEM_DATA).unwrap();
+        let stemmer = DictionaryStemmer::try_from(STEM_DATA).unwrap();
         let mut token_stream = TextAnalyzer::builder(WhitespaceTokenizer::default())
             .filter(stemmer)
             .build();
@@ -114,7 +114,7 @@ frog,";
 
     #[test]
     fn test_from_str() {
-        let stemmer = PaliDictStemmer::try_from(STEM_DATA).unwrap();
+        let stemmer = DictionaryStemmer::try_from(STEM_DATA).unwrap();
         assert_eq!(stemmer.term_stems.get("jumped").unwrap(), "jump");
         assert_eq!(stemmer.term_stems.get("jumping").unwrap(), "jump");
         assert_eq!(stemmer.term_stems.get("frog"), None);
