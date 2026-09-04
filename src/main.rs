@@ -23,7 +23,7 @@ use tantivy::tokenizer::{LowerCaser, TextAnalyzer};
 fn main() -> Result<()> {
     let args = Arguments::parse();
     match args.command {
-        Command::StemTable { stem_file } => {
+        Command::StemTable => {
             let files = PaliFiles::new(args.texts);
             let analyzer = TextAnalyzer::builder(PaliTokenizer::default())
                 .filter(LowerCaser)
@@ -32,7 +32,7 @@ fn main() -> Result<()> {
             let conn = Connection::open(args.dpd_db.as_path())?;
             let dictionary = Dictionary::from(conn);
             let term_stems = TermStems::new(vocabulary, &dictionary);
-            term_stems.save(&stem_file)?;
+            term_stems.save(&args.stem_file)?;
         }
         Command::Stem { term } => {
             let conn = Connection::open(args.dpd_db.as_path())?;

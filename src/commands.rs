@@ -17,6 +17,13 @@ pub struct Arguments {
     )]
     pub texts: PathBuf,
 
+    #[arg(
+        long = "stem-file",
+        default_value = "data/stems.csv",
+        help = "Location of file containing stems"
+    )]
+    pub stem_file: PathBuf,
+    
     #[command(subcommand)]
     pub command: Command,
 }
@@ -34,14 +41,7 @@ pub enum Command {
         term: String,
     },
     /// Save the lemmas and stems for all texts.
-    StemTable {
-        #[arg(
-            long = "stem-file",
-            default_value = "data/stems.csv",
-            help = "Location of output file"
-        )]
-        stem_file: PathBuf,
-    },
+    StemTable,
     /// Show charcters recognised as Pali
     PaliChars,
     /// Display all non-Pali characters
