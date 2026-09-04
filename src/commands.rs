@@ -23,14 +23,14 @@ pub struct Arguments {
         help = "Location of file containing stems"
     )]
     pub stem_file: PathBuf,
-    
+
     #[command(subcommand)]
     pub command: Command,
 }
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
-    /// Display the possible stems of a given term
+    /// Display tokens produced by text analyzer.
     Analyze {
         #[arg(help = "The text to be analyzed")]
         text: String,
