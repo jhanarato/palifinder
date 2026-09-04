@@ -10,12 +10,11 @@ pub struct DictionaryStemmer {
     term_stems: HashMap<String, String>,
 }
 
-impl TryFrom<&str> for DictionaryStemmer {
+impl TryFrom<Reader<&[u8]>> for DictionaryStemmer {
     type Error = Error;
 
-    fn try_from(data: &str) -> Result<Self, Self::Error> {
+    fn try_from(mut reader: Reader<&[u8]>) -> Result<Self, Self::Error> {
         let mut term_stems: HashMap<String, String> = HashMap::new();
-        let mut reader = Reader::from_reader(data.as_bytes());
         for record in reader.deserialize() {
             let term_stem: TermStem = record?;
             if let Some(stem) = term_stem.dpd_stem {
@@ -98,7 +97,8 @@ jumping,jump
 frog,";
 
     fn token_stream_helper(text: &str) -> Vec<Token> {
-        let stemmer = DictionaryStemmer::try_from(STEM_DATA).unwrap();
+        let reader = Reader::from_reader(STEM_DATA.as_bytes());
+        let stemmer = DictionaryStemmer::try_from(reader).unwrap();
         let mut token_stream = TextAnalyzer::builder(WhitespaceTokenizer::default())
             .filter(stemmer)
             .build();
@@ -114,7 +114,8 @@ frog,";
 
     #[test]
     fn test_from_str() {
-        let stemmer = DictionaryStemmer::try_from(STEM_DATA).unwrap();
+        let reader = Reader::from_reader(STEM_DATA.as_bytes());
+        let stemmer = DictionaryStemmer::try_from(reader).unwrap();
         assert_eq!(stemmer.term_stems.get("jumped").unwrap(), "jump");
         assert_eq!(stemmer.term_stems.get("jumping").unwrap(), "jump");
         assert_eq!(stemmer.term_stems.get("frog"), None);
