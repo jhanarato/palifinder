@@ -2,43 +2,30 @@ use crate::table::TermStem;
 use anyhow::Error;
 use csv::Reader;
 use std::collections::HashMap;
-use std::fs::File;
 use tantivy::tokenizer::{Token, TokenFilter, TokenStream, Tokenizer};
+
+impl<T> TryFrom<Reader<T>> for DictionaryStemmer
+where
+    T: std::io::Read,
+{
+    type Error = Error;
+
+    fn try_from(mut reader: Reader<T>) -> Result<Self, Self::Error> {
+        let mut term_stems: HashMap<String, String> = HashMap::new();
+        for record in reader.deserialize() {
+            let term_stem: TermStem = record?;
+            if let Some(stem) = term_stem.dpd_stem {
+                term_stems.insert(term_stem.term, stem);
+            }
+        }
+        Ok(Self { term_stems })
+    }
+}
 
 #[allow(unused)]
 #[derive(Clone)]
 pub struct DictionaryStemmer {
     term_stems: HashMap<String, String>,
-}
-
-impl TryFrom<Reader<&[u8]>> for DictionaryStemmer {
-    type Error = Error;
-
-    fn try_from(mut reader: Reader<&[u8]>) -> Result<Self, Self::Error> {
-        let mut term_stems: HashMap<String, String> = HashMap::new();
-        for record in reader.deserialize() {
-            let term_stem: TermStem = record?;
-            if let Some(stem) = term_stem.dpd_stem {
-                term_stems.insert(term_stem.term, stem);
-            }
-        }
-        Ok(Self { term_stems })
-    }
-}
-
-impl TryFrom<Reader<File>> for DictionaryStemmer {
-    type Error = Error;
-
-    fn try_from(mut reader: Reader<File>) -> Result<Self, Self::Error> {
-        let mut term_stems: HashMap<String, String> = HashMap::new();
-        for record in reader.deserialize() {
-            let term_stem: TermStem = record?;
-            if let Some(stem) = term_stem.dpd_stem {
-                term_stems.insert(term_stem.term, stem);
-            }
-        }
-        Ok(Self { term_stems })
-    }
 }
 
 impl TokenFilter for DictionaryStemmer {
@@ -84,8 +71,7 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<'_, T> {
             return false;
         }
         let token = self.tail.token_mut();
-        if let Some(stem) = self.term_stems.get(&token.text)
-        {
+        if let Some(stem) = self.term_stems.get(&token.text) {
             token.text = stem.clone();
         }
         true
