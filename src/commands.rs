@@ -32,6 +32,11 @@ pub struct Arguments {
 pub enum Command {
     /// Display tokens produced by text analyzer.
     Analyze {
+        #[arg(
+            short = 'a',
+            long = "algo",
+            help = "Use algorithmic stemmer")]
+        algorithmic: bool,
         #[arg(help = "The text to be analyzed")]
         text: String,
     },

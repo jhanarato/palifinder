@@ -1,15 +1,15 @@
+mod algo_stemmer;
 pub mod commands;
+mod dict_stemmer;
 pub mod dpd;
+#[allow(clippy::all)]
+pub mod snowball;
 pub mod table;
+#[cfg(test)]
+pub mod tests;
 pub mod texts;
 pub mod tokenizer;
 pub mod vocabulary;
-mod dict_stemmer;
-#[cfg(test)]
-pub mod tests;
-#[allow(clippy::all)]
-pub mod snowball;
-mod algo_stemmer;
 
 use crate::dict_stemmer::DictionaryStemmer;
 use crate::dpd::Dictionary;
@@ -25,7 +25,6 @@ use rusqlite::Connection;
 use std::collections::BTreeSet;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
 
-
 fn main() -> Result<()> {
     let args = Arguments::parse();
     match args.command {
@@ -40,7 +39,11 @@ fn main() -> Result<()> {
             let term_stems = TermStems::new(vocabulary, &dictionary);
             term_stems.save(&args.stem_file)?;
         }
-        Command::Analyze { text } => {
+        Command::Analyze { algorithmic, text } => {
+
+            if algorithmic {
+                println!("Using algorithmic stemmer");
+            }
             let reader = Reader::from_path(args.stem_file)?;
             let stemmer = DictionaryStemmer::try_from(reader)?;
             let mut analyzer = TextAnalyzer::builder(PaliTokenizer::default())
@@ -48,7 +51,7 @@ fn main() -> Result<()> {
                 .filter(stemmer)
                 .build();
             let mut token_stream = analyzer.token_stream(text.as_str());
-            token_stream.process(&mut |token: &Token| { println!("{0}", token.text)});
+            token_stream.process(&mut |token: &Token| println!("{0}", token.text));
         }
         Command::DpdLookup { term } => {
             let conn = Connection::open(args.dpd_db.as_path())?;
