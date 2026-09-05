@@ -9,6 +9,7 @@ mod dict_stemmer;
 pub mod tests;
 #[allow(clippy::all)]
 pub mod snowball;
+mod algo_stemmer;
 
 use crate::dict_stemmer::DictionaryStemmer;
 use crate::dpd::Dictionary;

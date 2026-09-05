@@ -5,7 +5,7 @@ mod snowball_env;
 
 pub mod algorithms;
 
-/// Wrapps a usable interface around the actual stemmer implementation
+#[derive(Clone)]
 pub struct Stemmer {
     stemmer: fn(&mut snowball_env::SnowballEnv) -> bool,
 }
