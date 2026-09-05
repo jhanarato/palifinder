@@ -40,16 +40,21 @@ fn main() -> Result<()> {
             term_stems.save(&args.stem_file)?;
         }
         Command::Analyze { algorithmic, text } => {
+            let mut analyzer = if algorithmic {
+                let stemmer = algo_stemmer::Stemmer {};
+                TextAnalyzer::builder(PaliTokenizer::default())
+                    .filter(LowerCaser)
+                    .filter(stemmer)
+                    .build()
+            } else {
+                let reader = Reader::from_path(args.stem_file)?;
+                let stemmer = DictionaryStemmer::try_from(reader)?;
+                TextAnalyzer::builder(PaliTokenizer::default())
+                    .filter(LowerCaser)
+                    .filter(stemmer)
+                    .build()
 
-            if algorithmic {
-                println!("Using algorithmic stemmer");
-            }
-            let reader = Reader::from_path(args.stem_file)?;
-            let stemmer = DictionaryStemmer::try_from(reader)?;
-            let mut analyzer = TextAnalyzer::builder(PaliTokenizer::default())
-                .filter(LowerCaser)
-                .filter(stemmer)
-                .build();
+            };
             let mut token_stream = analyzer.token_stream(text.as_str());
             token_stream.process(&mut |token: &Token| println!("{0}", token.text));
         }
