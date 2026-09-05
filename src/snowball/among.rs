@@ -1,4 +1,4 @@
-use crate::snowball::SnowballEnv;
+use crate::snowball::snowball_env::SnowballEnv;
 
 pub struct Among<T: 'static>(pub &'static str,
                              pub i32,

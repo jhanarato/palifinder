@@ -5,8 +5,9 @@
 #![allow(unused_mut)]
 #![allow(unused_parens)]
 #![allow(unused_variables)]
-use crate::snowball::SnowballEnv;
-use crate::snowball::Among;
+
+use crate::snowball::among::Among;
+use crate::snowball::snowball_env::SnowballEnv;
 
 #[derive(Clone)]
 struct Context {

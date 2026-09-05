@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use crate::snowball::Among;
+use crate::snowball::among::Among;
 
 #[derive(Debug, Clone)]
 pub struct SnowballEnv<'a> {
