@@ -2,7 +2,6 @@ mod algo_stemmer;
 pub mod commands;
 mod dict_stemmer;
 pub mod dpd;
-#[allow(clippy::all)]
 pub mod snowball;
 pub mod table;
 #[cfg(test)]
