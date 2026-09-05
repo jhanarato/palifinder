@@ -7,6 +7,8 @@ pub mod vocabulary;
 mod dict_stemmer;
 #[cfg(test)]
 pub mod tests;
+#[allow(clippy::all)]
+pub mod snowball;
 
 use crate::dict_stemmer::DictionaryStemmer;
 use crate::dpd::Dictionary;
@@ -21,6 +23,7 @@ use csv::Reader;
 use rusqlite::Connection;
 use std::collections::BTreeSet;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
+
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
