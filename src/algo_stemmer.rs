@@ -4,8 +4,7 @@ use tantivy::tokenizer::{Token, TokenFilter, TokenStream, Tokenizer};
 use crate::snowball;
 
 #[derive(Clone)]
-#[allow(unused)]
-pub struct AlgorithmicStemmer {}
+pub struct AlgorithmicStemmer;
 
 impl TokenFilter for AlgorithmicStemmer {
     type Tokenizer<T: Tokenizer> = StemmerFilter<T>;
@@ -68,5 +67,35 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
 
     fn token_mut(&mut self) -> &mut Token {
         self.tail.token_mut()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tantivy::tokenizer::{TextAnalyzer, Token, WhitespaceTokenizer};
+    use crate::algo_stemmer::AlgorithmicStemmer;
+    use crate::tests::assert_token;
+
+    fn token_stream_helper(text: &str) -> Vec<Token> {
+        let stemmer = AlgorithmicStemmer;
+        let mut token_stream = TextAnalyzer::builder(WhitespaceTokenizer::default())
+            .filter(stemmer)
+            .build();
+
+        let mut token_stream = token_stream.token_stream(text);
+        let mut tokens = vec![];
+        let mut add_token = |token: &Token| {
+            tokens.push(token.clone());
+        };
+        token_stream.process(&mut add_token);
+        tokens
+    }
+
+    #[test]
+    fn test_algorithmic_stemmer() {
+        let tokens = token_stream_helper("Tatra kho bhagavā");
+        assert_token(&tokens[0], 0, "Tatr", 0, 5);
+        assert_token(&tokens[1], 1, "kh", 6, 9);
+        assert_token(&tokens[2], 2, "bhagav", 10, 18);
     }
 }
