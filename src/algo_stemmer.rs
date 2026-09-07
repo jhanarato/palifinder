@@ -29,7 +29,6 @@ impl<T: Tokenizer> Tokenizer for StemmerFilter<T> {
         StemmerTokenStream {
             tail: self.inner.token_stream(text),
             buffer: String::new(),
-            stemmer: snowball::Stemmer::create(),
         }
     }
 }
@@ -38,7 +37,6 @@ impl<T: Tokenizer> Tokenizer for StemmerFilter<T> {
 pub struct StemmerTokenStream<T> {
     tail: T,
     buffer: String,
-    stemmer: snowball::Stemmer,
 }
 
 impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
@@ -49,7 +47,7 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
 
         let token = self.tail.token_mut();
 
-        match self.stemmer.stem(&token.text) {
+        match snowball::stem(&token.text) {
             Cow::Owned(stemmed_str) => token.text = stemmed_str,
             Cow::Borrowed(stemmed_str) => {
                 self.buffer.clear();
