@@ -5,9 +5,9 @@ use crate::snowball;
 
 #[derive(Clone)]
 #[allow(unused)]
-pub struct Stemmer {}
+pub struct AlgorithmicStemmer {}
 
-impl TokenFilter for Stemmer {
+impl TokenFilter for AlgorithmicStemmer {
     type Tokenizer<T: Tokenizer> = StemmerFilter<T>;
 
     fn transform<T: Tokenizer>(self, tokenizer: T) -> StemmerFilter<T> {

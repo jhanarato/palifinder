@@ -40,7 +40,7 @@ fn main() -> Result<()> {
         }
         Command::Analyze { algorithmic, text } => {
             let mut analyzer = if algorithmic {
-                let stemmer = algo_stemmer::Stemmer {};
+                let stemmer = algo_stemmer::AlgorithmicStemmer {};
                 TextAnalyzer::builder(PaliTokenizer::default())
                     .filter(LowerCaser)
                     .filter(stemmer)
