@@ -1,7 +1,7 @@
+use crate::snowball::{pali, snowball_env};
 use std::borrow::Cow;
 use std::mem;
 use tantivy::tokenizer::{Token, TokenFilter, TokenStream, Tokenizer};
-use crate::snowball;
 
 #[derive(Clone)]
 pub struct AlgorithmicStemmer;
@@ -39,6 +39,14 @@ pub struct StemmerTokenStream<T> {
     buffer: String,
 }
 
+impl<T> StemmerTokenStream<T> {
+    fn stem(input: &str) -> Cow<'_, str> {
+        let mut env = snowball_env::SnowballEnv::create(input);
+        pali::stem(&mut env);
+        env.get_current()
+    }
+}
+
 impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
     fn advance(&mut self) -> bool {
         if !self.tail.advance() {
@@ -47,7 +55,7 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
 
         let token = self.tail.token_mut();
 
-        match snowball::stem(&token.text) {
+        match Self::stem(&token.text) {
             Cow::Owned(stemmed_str) => token.text = stemmed_str,
             Cow::Borrowed(stemmed_str) => {
                 self.buffer.clear();
@@ -70,9 +78,9 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
 
 #[cfg(test)]
 mod tests {
-    use tantivy::tokenizer::{TextAnalyzer, Token, WhitespaceTokenizer};
     use crate::algo_stemmer::AlgorithmicStemmer;
     use crate::tests::assert_token;
+    use tantivy::tokenizer::{TextAnalyzer, Token, WhitespaceTokenizer};
 
     fn token_stream_helper(text: &str) -> Vec<Token> {
         let stemmer = AlgorithmicStemmer;
