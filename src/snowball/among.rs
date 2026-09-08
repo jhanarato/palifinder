@@ -1,3 +1,4 @@
+/// Copied from here: https://github.com/snowballstem/snowball/blob/main/rust/src/snowball/among.rs
 use crate::snowball::snowball_env::SnowballEnv;
 
 pub struct Among<T: 'static>(pub &'static str,
