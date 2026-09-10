@@ -35,14 +35,7 @@ fn main() -> Result<()> {
             analyze_text(algorithmic, text.as_str(), &args.stem_file)?;
         }
         Command::DpdLookup { term } => {
-            let conn = Connection::open(args.dpd_db.as_path())?;
-            let dict = Dictionary::from(conn);
-            let ids = dict.lookup(term.as_str());
-            match ids {
-                Err(e) => println!("An error occured: {e:#?}"),
-                Ok(ids) if ids.is_empty() => println!("Nothing found"),
-                Ok(ids) => ids.iter().for_each(|id| println!("{id}")),
-            }
+            lookup_term_in_dictionary(term.as_str(), args.dpd_db.as_path())?;
         }
         Command::PaliChars => {
             let tokenizer = PaliTokenizer::default();
@@ -105,5 +98,17 @@ fn analyze_text(algorithmic: bool, text: &str, stem_file_path: &Path) -> Result<
     };
     let mut token_stream = analyzer.token_stream(text);
     token_stream.process(&mut |token: &Token| println!("{0}", token.text));
+    Ok(())
+}
+
+fn lookup_term_in_dictionary(term: &str, dictionary_path: &Path) -> Result<()> {
+    let conn = Connection::open(dictionary_path)?;
+    let dict = Dictionary::from(conn);
+    let ids = dict.lookup(term);
+    match ids {
+        Err(e) => println!("An error occured: {e:#?}"),
+        Ok(ids) if ids.is_empty() => println!("Nothing found"),
+        Ok(ids) => ids.iter().for_each(|id| println!("{id}")),
+    }
     Ok(())
 }
