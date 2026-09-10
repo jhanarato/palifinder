@@ -3,7 +3,7 @@ use crate::vocabulary::Vocabulary;
 use anyhow::Result;
 use csv::Writer;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::path::Path;
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Serialize, Deserialize)]
@@ -14,12 +14,12 @@ pub struct TermStem {
 
 #[derive(Clone)]
 pub struct TermStems {
-    pub entries: HashMap<String, Option<String>>,
+    pub entries: BTreeMap<String, Option<String>>,
 }
 
 impl TermStems {
     pub fn new(vocabulary: Vocabulary, dictionary: &Dictionary) -> Self {
-        let mut entries: HashMap<String, Option<String>> = HashMap::new();
+        let mut entries: BTreeMap<String, Option<String>> = BTreeMap::new();
         for term in vocabulary {
             let stems = dictionary.stems(term.as_str());
             match stems {
@@ -50,7 +50,7 @@ impl TermStems {
 
 impl From<Vec<TermStem>> for TermStems {
     fn from(term_stems: Vec<TermStem>) -> Self {
-        let mut entries = HashMap::new();
+        let mut entries = BTreeMap::new();
         for term_stem in term_stems {
             entries.insert(term_stem.term, term_stem.dpd_stem);
         }
