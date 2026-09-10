@@ -14,7 +14,7 @@ pub struct TermStem {
 
 #[derive(Clone)]
 pub struct TermStems {
-    pub entries: BTreeMap<String, Option<String>>,
+    entries: BTreeMap<String, Option<String>>,
 }
 
 impl TermStems {
