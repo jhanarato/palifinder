@@ -14,11 +14,11 @@ pub struct TermStem {
 }
 
 #[derive(Clone)]
-pub struct TermStems {
+pub struct StemTable {
     entries: Vec<TermStem>,
 }
 
-impl TermStems {
+impl StemTable {
     pub fn new(vocabulary: Vocabulary, dictionary: &Dictionary) -> Self {
         let mut entries = Vec::new();
         for term in vocabulary {

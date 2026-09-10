@@ -12,7 +12,7 @@ pub mod vocabulary;
 
 use crate::dict_stemmer::DictionaryStemmer;
 use crate::dpd::Dictionary;
-use crate::table::TermStems;
+use crate::table::StemTable;
 use crate::texts::PaliFiles;
 use crate::tokenizer::PaliTokenizer;
 use crate::vocabulary::Vocabulary;
@@ -59,7 +59,7 @@ fn create_stem_table(
     let vocabulary = Vocabulary::new(files.segments(), analyzer);
     let conn = Connection::open(dictionary_path)?;
     let dictionary = Dictionary::from(conn);
-    let term_stems = TermStems::new(vocabulary, &dictionary);
+    let term_stems = StemTable::new(vocabulary, &dictionary);
     term_stems.save(stem_file_path)?;
     Ok(())
 }
