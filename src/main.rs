@@ -38,12 +38,7 @@ fn main() -> Result<()> {
             lookup_term_in_dictionary(term.as_str(), args.dpd_db.as_path())?;
         }
         Command::PaliChars => {
-            let tokenizer = PaliTokenizer::default();
-            let mut alphabet: Vec<char> = tokenizer.alphabet.into_iter().collect();
-            alphabet.sort_unstable();
-            for char in alphabet {
-                print!("{char} ");
-            }
+            show_pali_characters();
         }
         Command::OtherChars => {
             let files = PaliFiles::new(args.texts);
@@ -111,4 +106,13 @@ fn lookup_term_in_dictionary(term: &str, dictionary_path: &Path) -> Result<()> {
         Ok(ids) => ids.iter().for_each(|id| println!("{id}")),
     }
     Ok(())
+}
+
+fn show_pali_characters() {
+    let tokenizer = PaliTokenizer::default();
+    let mut alphabet: Vec<char> = tokenizer.alphabet.into_iter().collect();
+    alphabet.sort_unstable();
+    for char in alphabet {
+        print!("{char} ");
+    }
 }
