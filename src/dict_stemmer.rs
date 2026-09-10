@@ -93,10 +93,10 @@ mod tests {
     use tantivy::tokenizer::{TextAnalyzer, Token, WhitespaceTokenizer};
 
     const STEM_DATA: &str = "\
-term,dpd_stem
-jumped,jump
-jumping,jump
-frog,";
+term,dpd_stem,snowball_stem
+jumped,jump,jump
+jumping,jump,jump
+frog,,frog";
 
     fn token_stream_helper(text: &str) -> Vec<Token> {
         let reader = Reader::from_reader(STEM_DATA.as_bytes());

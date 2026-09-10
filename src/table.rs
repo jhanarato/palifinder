@@ -4,11 +4,13 @@ use anyhow::Result;
 use csv::Writer;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use crate::snowball;
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Serialize, Deserialize)]
 pub struct TermStem {
     pub term: String,
     pub dpd_stem: Option<String>,
+    pub snowball_stem: String,
 }
 
 #[derive(Clone)]
@@ -21,7 +23,8 @@ impl TermStems {
         let mut entries = Vec::new();
         for term in vocabulary {
             let dpd_stem = Self::dpd_stem(term.as_str(), dictionary);
-            entries.push(TermStem { term, dpd_stem });
+            let snowball_stem = snowball::pali_stem(term.as_str());
+            entries.push(TermStem { term, dpd_stem, snowball_stem });
         }
         Self { entries }
     }
