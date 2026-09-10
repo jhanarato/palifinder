@@ -47,7 +47,7 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
 
         let token = self.tail.token_mut();
 
-        match snowball::stem(&token.text) {
+        match snowball::pali_stem(&token.text) {
             Cow::Owned(stemmed_str) => token.text = stemmed_str,
             Cow::Borrowed(stemmed_str) => {
                 self.buffer.clear();
