@@ -1,6 +1,4 @@
 use crate::snowball;
-use std::borrow::Cow;
-use std::mem;
 use tantivy::tokenizer::{Token, TokenFilter, TokenStream, Tokenizer};
 
 #[derive(Clone)]
@@ -44,18 +42,8 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
         if !self.tail.advance() {
             return false;
         }
-
         let token = self.tail.token_mut();
-
-        match snowball::pali_stem(&token.text) {
-            Cow::Owned(stemmed_str) => token.text = stemmed_str,
-            Cow::Borrowed(stemmed_str) => {
-                self.buffer.clear();
-                self.buffer.push_str(stemmed_str);
-                mem::swap(&mut token.text, &mut self.buffer);
-            }
-        }
-
+        token.text = snowball::pali_stem(&token.text);
         true
     }
 
