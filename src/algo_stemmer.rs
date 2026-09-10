@@ -1,4 +1,4 @@
-use crate::snowball::{pali, snowball_env};
+use crate::snowball;
 use std::borrow::Cow;
 use std::mem;
 use tantivy::tokenizer::{Token, TokenFilter, TokenStream, Tokenizer};
@@ -39,14 +39,6 @@ pub struct StemmerTokenStream<T> {
     buffer: String,
 }
 
-impl<T> StemmerTokenStream<T> {
-    fn stem(input: &str) -> Cow<'_, str> {
-        let mut env = snowball_env::SnowballEnv::create(input);
-        pali::stem(&mut env);
-        env.get_current()
-    }
-}
-
 impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
     fn advance(&mut self) -> bool {
         if !self.tail.advance() {
@@ -55,7 +47,7 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<T> {
 
         let token = self.tail.token_mut();
 
-        match Self::stem(&token.text) {
+        match snowball::stem(&token.text) {
             Cow::Owned(stemmed_str) => token.text = stemmed_str,
             Cow::Borrowed(stemmed_str) => {
                 self.buffer.clear();

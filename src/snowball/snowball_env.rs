@@ -1,4 +1,4 @@
-/// Copied from here https://github.com/snowballstem/snowball/blob/main/rust/src/snowball/snowball_env.rs
+/// Copied from here <https://github.com/snowballstem/snowball/blob/main/rust/src/snowball/snowball_env.rs>
 use std::borrow::Cow;
 use crate::snowball::among::Among;
 
