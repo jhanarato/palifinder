@@ -22,22 +22,13 @@ use commands::{Arguments, Command};
 use csv::Reader;
 use rusqlite::Connection;
 use std::collections::BTreeSet;
+use std::path::{Path, PathBuf};
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
     match args.command {
-        Command::StemTable => {
-            let files = PaliFiles::new(args.texts);
-            let analyzer = TextAnalyzer::builder(PaliTokenizer::default())
-                .filter(LowerCaser)
-                .build();
-            let vocabulary = Vocabulary::new(files.segments(), analyzer);
-            let conn = Connection::open(args.dpd_db.as_path())?;
-            let dictionary = Dictionary::from(conn);
-            let term_stems = TermStems::new(vocabulary, &dictionary);
-            term_stems.save(&args.stem_file)?;
-        }
+        Command::StemTable => { create_stem_table(&args.texts, &args.dpd_db, &args.stem_file)?; }
         Command::Analyze { algorithmic, text } => {
             let mut analyzer = if algorithmic {
                 let stemmer = algo_stemmer::AlgorithmicStemmer {};
@@ -52,7 +43,6 @@ fn main() -> Result<()> {
                     .filter(LowerCaser)
                     .filter(stemmer)
                     .build()
-
             };
             let mut token_stream = analyzer.token_stream(text.as_str());
             token_stream.process(&mut |token: &Token| println!("{0}", token.text));
@@ -91,5 +81,22 @@ fn main() -> Result<()> {
             }
         }
     }
+    Ok(())
+}
+
+fn create_stem_table(
+    texts_path: &Path,
+    dictionary_path: &Path,
+    stem_file_path: &Path,
+) -> Result<()> {
+    let files = PaliFiles::new(PathBuf::from(texts_path));
+    let analyzer = TextAnalyzer::builder(PaliTokenizer::default())
+        .filter(LowerCaser)
+        .build();
+    let vocabulary = Vocabulary::new(files.segments(), analyzer);
+    let conn = Connection::open(dictionary_path)?;
+    let dictionary = Dictionary::from(conn);
+    let term_stems = TermStems::new(vocabulary, &dictionary);
+    term_stems.save(stem_file_path)?;
     Ok(())
 }
