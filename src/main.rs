@@ -41,19 +41,7 @@ fn main() -> Result<()> {
             show_pali_characters();
         }
         Command::OtherChars => {
-            let files = PaliFiles::new(args.texts);
-            let mut chars = BTreeSet::<char>::new();
-            for segment in files.segments() {
-                for char in segment.text.chars() {
-                    chars.insert(char);
-                }
-            }
-            let tokenizer = PaliTokenizer::default();
-            for char in chars {
-                if !tokenizer.alphabet.contains(&char) {
-                    print!("{char} ");
-                }
-            }
+            show_other_characters(args.texts);
         }
     }
     Ok(())
@@ -114,5 +102,21 @@ fn show_pali_characters() {
     alphabet.sort_unstable();
     for char in alphabet {
         print!("{char} ");
+    }
+}
+
+fn show_other_characters(texts_path: PathBuf) {
+    let files = PaliFiles::new(texts_path);
+    let mut chars = BTreeSet::<char>::new();
+    for segment in files.segments() {
+        for char in segment.text.chars() {
+            chars.insert(char);
+        }
+    }
+    let tokenizer = PaliTokenizer::default();
+    for char in chars {
+        if !tokenizer.alphabet.contains(&char) {
+            print!("{char} ");
+        }
     }
 }
