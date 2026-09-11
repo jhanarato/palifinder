@@ -1,10 +1,11 @@
 use crate::dpd::Dictionary;
+use crate::snowball;
 use crate::vocabulary::Vocabulary;
 use anyhow::{Error, Result};
 use csv::{Reader, Writer};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use crate::snowball;
+use std::vec::IntoIter;
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Serialize, Deserialize)]
 pub struct TermStem {
@@ -24,7 +25,11 @@ impl StemTable {
         for term in vocabulary {
             let dpd_stem = Self::dpd_stem(term.as_str(), dictionary);
             let snowball_stem = snowball::pali_stem(term.as_str());
-            entries.push(TermStem { term, dpd_stem, snowball_stem });
+            entries.push(TermStem {
+                term,
+                dpd_stem,
+                snowball_stem,
+            });
         }
         Self { records: entries }
     }
@@ -61,6 +66,15 @@ where
     }
 }
 
+impl IntoIterator for StemTable {
+    type Item = TermStem;
+    type IntoIter = IntoIter<TermStem>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.records.into_iter()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -75,6 +89,32 @@ frog,,frog";
     #[test]
     fn test_try_from_reader() {
         let reader = Reader::from_reader(STEM_DATA.as_bytes());
-        let _table = StemTable::try_from(reader);
+        let table = StemTable::try_from(reader).unwrap();
+        let term_stems: Vec<TermStem> = table.into_iter().collect();
+        assert_eq!(term_stems.len(), 3);
+        assert_eq!(
+            term_stems[0],
+            TermStem {
+                term: String::from("jumped"),
+                dpd_stem: Some(String::from("jump")),
+                snowball_stem: String::from("jump")
+            }
+        );
+        assert_eq!(
+            term_stems[1],
+            TermStem {
+                term: String::from("jumping"),
+                dpd_stem: Some(String::from("jump")),
+                snowball_stem: String::from("jump")
+            }
+        );
+        assert_eq!(
+            term_stems[2],
+            TermStem {
+                term: String::from("frog"),
+                dpd_stem: None,
+                snowball_stem: String::from("frog")
+            }
+        );
     }
 }
