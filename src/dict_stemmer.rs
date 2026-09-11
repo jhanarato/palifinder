@@ -1,26 +1,6 @@
-use crate::table::{StemTable, TermStem};
-use anyhow::Error;
-use csv::Reader;
+use crate::table::StemTable;
 use std::collections::HashMap;
 use tantivy::tokenizer::{Token, TokenFilter, TokenStream, Tokenizer};
-
-impl<T> TryFrom<Reader<T>> for DictionaryStemmer
-where
-    T: std::io::Read,
-{
-    type Error = Error;
-
-    fn try_from(mut reader: Reader<T>) -> Result<Self, Self::Error> {
-        let mut term_stems: HashMap<String, String> = HashMap::new();
-        for record in reader.deserialize() {
-            let term_stem: TermStem = record?;
-            if let Some(stem) = term_stem.dpd_stem {
-                term_stems.insert(term_stem.term, stem);
-            }
-        }
-        Ok(Self { term_stems })
-    }
-}
 
 impl From<StemTable> for DictionaryStemmer {
     fn from(table: StemTable) -> Self {
@@ -100,10 +80,11 @@ impl<T: TokenStream> TokenStream for StemmerTokenStream<'_, T> {
 
 #[cfg(test)]
 mod tests {
+    use csv::Reader;
     use super::*;
+    use crate::table::StemTable;
     use crate::tests::assert_token;
     use tantivy::tokenizer::{TextAnalyzer, Token, WhitespaceTokenizer};
-    use crate::table::StemTable;
 
     const STEM_DATA: &str = "\
 term,dpd_stem,snowball_stem
@@ -126,15 +107,6 @@ frog,,frog";
         };
         token_stream.process(&mut add_token);
         tokens
-    }
-
-    #[test]
-    fn test_from_str() {
-        let reader = Reader::from_reader(STEM_DATA.as_bytes());
-        let stemmer = DictionaryStemmer::try_from(reader).unwrap();
-        assert_eq!(stemmer.term_stems.get("jumped").unwrap(), "jump");
-        assert_eq!(stemmer.term_stems.get("jumping").unwrap(), "jump");
-        assert_eq!(stemmer.term_stems.get("frog"), None);
     }
 
     #[test]

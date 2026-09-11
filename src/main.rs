@@ -11,6 +11,7 @@ pub mod tokenizer;
 pub mod vocabulary;
 
 use crate::dict_stemmer::DictionaryStemmer;
+use crate::algo_stemmer::AlgorithmicStemmer;
 use crate::dpd::Dictionary;
 use crate::table::StemTable;
 use crate::texts::PaliFiles;
@@ -66,17 +67,16 @@ fn create_stem_table(
 
 fn analyze_text(algorithmic: bool, text: &str, stem_file_path: &Path) -> Result<()> {
     let mut analyzer = if algorithmic {
-        let stemmer = algo_stemmer::AlgorithmicStemmer {};
         TextAnalyzer::builder(PaliTokenizer::default())
             .filter(LowerCaser)
-            .filter(stemmer)
+            .filter(AlgorithmicStemmer {})
             .build()
     } else {
         let reader = Reader::from_path(stem_file_path)?;
-        let stemmer = DictionaryStemmer::try_from(reader)?;
+        let table = StemTable::try_from(reader)?;
         TextAnalyzer::builder(PaliTokenizer::default())
             .filter(LowerCaser)
-            .filter(stemmer)
+            .filter(DictionaryStemmer::from(table))
             .build()
     };
     let mut token_stream = analyzer.token_stream(text);
