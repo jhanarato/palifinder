@@ -1,4 +1,4 @@
-use crate::table::TermStem;
+use crate::table::{StemTable, TermStem};
 use anyhow::Error;
 use csv::Reader;
 use std::collections::HashMap;
@@ -19,6 +19,18 @@ where
             }
         }
         Ok(Self { term_stems })
+    }
+}
+
+impl From<StemTable> for DictionaryStemmer {
+    fn from(table: StemTable) -> Self {
+        let mut term_stems: HashMap<String, String> = HashMap::new();
+        for term_stem in table {
+            if let Some(dpd_stem) = term_stem.dpd_stem {
+                term_stems.insert(term_stem.term, dpd_stem);
+            }
+        }
+        Self { term_stems }
     }
 }
 
@@ -91,6 +103,7 @@ mod tests {
     use super::*;
     use crate::tests::assert_token;
     use tantivy::tokenizer::{TextAnalyzer, Token, WhitespaceTokenizer};
+    use crate::table::StemTable;
 
     const STEM_DATA: &str = "\
 term,dpd_stem,snowball_stem
@@ -100,7 +113,8 @@ frog,,frog";
 
     fn token_stream_helper(text: &str) -> Vec<Token> {
         let reader = Reader::from_reader(STEM_DATA.as_bytes());
-        let stemmer = DictionaryStemmer::try_from(reader).unwrap();
+        let table = StemTable::try_from(reader).unwrap();
+        let stemmer = DictionaryStemmer::from(table);
         let mut token_stream = TextAnalyzer::builder(WhitespaceTokenizer::default())
             .filter(stemmer)
             .build();
