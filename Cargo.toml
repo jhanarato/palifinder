@@ -12,6 +12,7 @@ tantivy = "0.26.1"
 walkdir = "2.5.0"
 csv = "1.4.0"
 clap = { version = "4.6.6", features = ["derive"] }
+counter = "0.7.1"
 
 [lints.rust]
 warnings = "deny"

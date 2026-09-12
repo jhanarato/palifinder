@@ -9,6 +9,7 @@ pub mod tests;
 pub mod texts;
 pub mod tokenizer;
 pub mod vocabulary;
+mod stop_words;
 
 use crate::dict_stemmer::DictionaryStemmer;
 use crate::algo_stemmer::AlgorithmicStemmer;
