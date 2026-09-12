@@ -1,5 +1,9 @@
 mod among;
 #[allow(unused)]
+#[allow(clippy::pedantic)]
+#[allow(clippy::style)]
+#[allow(clippy::complexity)]
+#[allow(clippy::suspicious)]
 mod snowball_env;
 mod pali;
 

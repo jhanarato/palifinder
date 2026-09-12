@@ -13,7 +13,7 @@ use crate::snowball::snowball_env::SnowballEnv;
 struct Context {
 }
 
-static A_0: &'static [Among<Context>; 25] = &[
+static A_0: &[Among<Context>; 25] = &[
     Among("a", -1, -1, None),
     Among("māna", 0, -1, None),
     Among("issa", 0, -1, None),
@@ -53,5 +53,5 @@ pub fn stem(env: &mut SnowballEnv) -> bool {
     env.bra = env.cursor;
     env.slice_del();
     env.cursor = env.limit_backward;
-    return true
+    true
 }
