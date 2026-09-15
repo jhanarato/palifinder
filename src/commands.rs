@@ -56,6 +56,7 @@ pub enum Command {
         #[arg(
             short = 'n',
             long = "number",
+            default_value_t = 10,
             help = "How many of the most frequent words to display"
         )]
         number: usize,
