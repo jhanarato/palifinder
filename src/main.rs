@@ -26,6 +26,7 @@ use rusqlite::Connection;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
+use crate::stop_words::most_frequent_words;
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -44,6 +45,9 @@ fn main() -> Result<()> {
         }
         Command::OtherChars => {
             show_other_characters(args.texts);
+        }
+        Command::StopWords { number } => {
+            show_stop_words(args.texts, number);
         }
     }
     Ok(())
@@ -120,4 +124,12 @@ fn show_other_characters(texts_path: PathBuf) {
             print!("{char} ");
         }
     }
+}
+
+fn show_stop_words(texts_path: PathBuf, number: usize) {
+    let files = PaliFiles::new(texts_path);
+    for word in most_frequent_words(files.segments(), number) {
+        println!("{word}");
+    }
+
 }

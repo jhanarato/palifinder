@@ -51,4 +51,13 @@ pub enum Command {
     PaliChars,
     /// Display all non-Pali characters
     OtherChars,
+    /// Display most frequent words
+    StopWords {
+        #[arg(
+            short = 'n',
+            long = "number",
+            help = "How many of the most frequent words to display"
+        )]
+        number: usize,
+    },
 }

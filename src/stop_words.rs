@@ -4,7 +4,7 @@ use tantivy::tokenizer::{LowerCaser, TextAnalyzer, TokenStream};
 use crate::tokenizer::PaliTokenizer;
 
 #[allow(unused)]
-fn most_frequent_words(segments: impl Iterator<Item = Segment>, number: usize) -> Vec<(String, usize)> {
+pub fn most_frequent_words(segments: impl Iterator<Item = Segment>, number: usize) -> Vec<String> {
     let mut analyzer = TextAnalyzer::builder(PaliTokenizer::default())
         .filter(LowerCaser)
         .build();
@@ -19,7 +19,7 @@ fn most_frequent_words(segments: impl Iterator<Item = Segment>, number: usize) -
     }
 
     let word_count: Counter<String> = tokens.iter().cloned().collect::<Counter<String>>();
-    word_count.k_most_common_ordered(number)
+    word_count.k_most_common_ordered(number).into_iter().map(|word_count| word_count.0).collect()
 }
 
 #[cfg(test)]
@@ -43,7 +43,7 @@ mod tests {
         ];
         assert_eq!(
             most_frequent_words(segments.into_iter(), 2),
-            vec![(String::from("pathaviṁ"), 5), (String::from("maññati"), 4)]
+            vec![String::from("pathaviṁ"), String::from("maññati")]
         );
     }
 }
