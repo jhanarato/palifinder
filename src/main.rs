@@ -26,7 +26,7 @@ use rusqlite::Connection;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
-use crate::stop_words::most_frequent_words;
+use crate::stop_words::{most_frequent_words, stop_word_filter};
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -74,6 +74,7 @@ fn analyze_text(algorithmic: bool, text: &str, stem_file_path: &Path) -> Result<
     let mut analyzer = if algorithmic {
         TextAnalyzer::builder(PaliTokenizer::default())
             .filter(LowerCaser)
+            .filter(stop_word_filter())
             .filter(AlgorithmicStemmer {})
             .build()
     } else {
@@ -81,6 +82,7 @@ fn analyze_text(algorithmic: bool, text: &str, stem_file_path: &Path) -> Result<
         let table = StemTable::try_from(reader)?;
         TextAnalyzer::builder(PaliTokenizer::default())
             .filter(LowerCaser)
+            .filter(stop_word_filter())
             .filter(DictionaryStemmer::from(table))
             .build()
     };
