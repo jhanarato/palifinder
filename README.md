@@ -10,7 +10,7 @@ The main objectives:
 - [X] Create an algorithmic stemmer in Snowball.
 - [X] Test the performance of the algorithmic stemmer against the "perfect" dictionary stemmer.
 - [X] Investigate RAM usage of dictionary stemmer. (Probably around 5MB)
-- [ ] Create a stop word filter.
+- [X] Create a stop word filter.
 - [ ] Integrate the stemmers with Tantivy.
 - [ ] Index the tipitika with Tantivy.
 - [ ] Create a command line interface to search the tipitika.
