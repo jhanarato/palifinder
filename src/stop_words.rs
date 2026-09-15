@@ -1,9 +1,8 @@
 use crate::texts::Segment;
-use counter::Counter;
-use tantivy::tokenizer::{LowerCaser, TextAnalyzer, TokenStream};
 use crate::tokenizer::PaliTokenizer;
+use counter::Counter;
+use tantivy::tokenizer::{LowerCaser, StopWordFilter, TextAnalyzer, TokenStream};
 
-#[allow(unused)]
 pub fn most_frequent_words(segments: impl Iterator<Item = Segment>, number: usize) -> Vec<String> {
     let mut analyzer = TextAnalyzer::builder(PaliTokenizer::default())
         .filter(LowerCaser)
@@ -20,6 +19,12 @@ pub fn most_frequent_words(segments: impl Iterator<Item = Segment>, number: usiz
 
     let word_count: Counter<String> = tokens.iter().cloned().collect::<Counter<String>>();
     word_count.k_most_common_ordered(number).into_iter().map(|word_count| word_count.0).collect()
+}
+
+#[allow(unused)]
+pub fn stop_word_filter() -> StopWordFilter {
+    let stop_words = vec!["ca", "ti", "na", "pe", "vā", "kho", "hoti", "bhikkhave", "b", "so"];
+    StopWordFilter::remove(stop_words.into_iter().map(String::from))
 }
 
 #[cfg(test)]
