@@ -87,7 +87,7 @@ fn analyze_text(algorithmic: bool, text: &str, stem_file_path: &Path) -> Result<
             .build()
     };
     let mut token_stream = analyzer.token_stream(text);
-    token_stream.process(&mut |token: &Token| println!("{0}", token.text));
+    token_stream.process(&mut |token: &Token| print!("{0} ", token.text));
     Ok(())
 }
 
