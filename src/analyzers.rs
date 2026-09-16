@@ -3,28 +3,29 @@ use crate::dict_stemmer::DictionaryStemmer;
 use crate::stop_words::stop_word_filter;
 use crate::table::StemTable;
 use crate::tokenizer::PaliTokenizer;
+use anyhow::Error;
 use csv::Reader;
 use std::path::PathBuf;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer};
-use anyhow::Result;
 
 pub enum AnalyzerConfig {
     Algorithmic,
     Dictionary { stem_file: PathBuf },
 }
 
-impl AnalyzerConfig {
-    #[must_use]
-    pub fn build(self) -> Result<TextAnalyzer> {
-        match self {
-            Self::Algorithmic => {
+impl TryFrom<AnalyzerConfig> for TextAnalyzer {
+    type Error = Error;
+
+    fn try_from(config: AnalyzerConfig) -> Result<Self, Self::Error> {
+        match config {
+            AnalyzerConfig::Algorithmic => {
                 Ok(TextAnalyzer::builder(PaliTokenizer::default())
                     .filter(LowerCaser)
                     .filter(stop_word_filter())
                     .filter(AlgorithmicStemmer)
                     .build())
             }
-            Self::Dictionary { stem_file } => {
+            AnalyzerConfig::Dictionary { stem_file } => {
                 let reader = Reader::from_path(stem_file)?;
                 let table = StemTable::try_from(reader)?;
                 Ok(TextAnalyzer::builder(PaliTokenizer::default())
