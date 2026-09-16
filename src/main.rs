@@ -22,7 +22,6 @@ use crate::vocabulary::Vocabulary;
 use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
-use csv::Reader;
 use rusqlite::Connection;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -71,13 +70,12 @@ fn create_stem_table(
 }
 
 fn analyze_text(algorithmic: bool, text: &str, stem_file_path: &Path) -> Result<()> {
-    let mut analyzer = if algorithmic {
-        AnalyzerConfig::Algorithmic.build()
+    let config = if algorithmic {
+        AnalyzerConfig::Algorithmic
     } else {
-        let reader = Reader::from_path(stem_file_path)?;
-        let table = StemTable::try_from(reader)?;
-        AnalyzerConfig::Dictionary { table }.build()
+        AnalyzerConfig::Dictionary { stem_file: stem_file_path.to_path_buf() }
     };
+    let mut analyzer = config.build()?;
     let mut token_stream = analyzer.token_stream(text);
     token_stream.process(&mut |token: &Token| print!("{0} ", token.text));
     Ok(())
