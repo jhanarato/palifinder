@@ -12,7 +12,7 @@ pub mod vocabulary;
 mod stop_words;
 pub mod analyzers;
 
-use crate::analyzers::Analyzer;
+use crate::analyzers::AnalyzerConfig;
 use crate::dpd::Dictionary;
 use crate::stop_words::most_frequent_words;
 use crate::table::StemTable;
@@ -72,11 +72,11 @@ fn create_stem_table(
 
 fn analyze_text(algorithmic: bool, text: &str, stem_file_path: &Path) -> Result<()> {
     let mut analyzer = if algorithmic {
-        Analyzer::StemAlgorithmic.build()
+        AnalyzerConfig::Algorithmic.build()
     } else {
         let reader = Reader::from_path(stem_file_path)?;
         let table = StemTable::try_from(reader)?;
-        Analyzer::StemDictionary { table }.build()
+        AnalyzerConfig::Dictionary { table }.build()
     };
     let mut token_stream = analyzer.token_stream(text);
     token_stream.process(&mut |token: &Token| print!("{0} ", token.text));

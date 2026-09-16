@@ -5,21 +5,21 @@ use crate::table::StemTable;
 use crate::tokenizer::PaliTokenizer;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer};
 
-pub enum Analyzer {
-    StemAlgorithmic,
-    StemDictionary { table: StemTable },
+pub enum AnalyzerConfig {
+    Algorithmic,
+    Dictionary { table: StemTable },
 }
 
-impl Analyzer {
+impl AnalyzerConfig {
     #[must_use]
     pub fn build(self) -> TextAnalyzer {
         match self {
-            Self::StemAlgorithmic => TextAnalyzer::builder(PaliTokenizer::default())
+            Self::Algorithmic => TextAnalyzer::builder(PaliTokenizer::default())
                 .filter(LowerCaser)
                 .filter(stop_word_filter())
                 .filter(AlgorithmicStemmer)
                 .build(),
-            Self::StemDictionary { table } => TextAnalyzer::builder(PaliTokenizer::default())
+            Self::Dictionary { table } => TextAnalyzer::builder(PaliTokenizer::default())
                 .filter(LowerCaser)
                 .filter(stop_word_filter())
                 .filter(DictionaryStemmer::from(table))
