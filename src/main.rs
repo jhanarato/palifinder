@@ -10,10 +10,11 @@ pub mod texts;
 pub mod tokenizer;
 pub mod vocabulary;
 mod stop_words;
+pub mod analyzers;
 
-use crate::dict_stemmer::DictionaryStemmer;
-use crate::algo_stemmer::AlgorithmicStemmer;
+use crate::analyzers::Analyzer;
 use crate::dpd::Dictionary;
+use crate::stop_words::most_frequent_words;
 use crate::table::StemTable;
 use crate::texts::PaliFiles;
 use crate::tokenizer::PaliTokenizer;
@@ -26,7 +27,6 @@ use rusqlite::Connection;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
-use crate::stop_words::{most_frequent_words, stop_word_filter};
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -72,19 +72,11 @@ fn create_stem_table(
 
 fn analyze_text(algorithmic: bool, text: &str, stem_file_path: &Path) -> Result<()> {
     let mut analyzer = if algorithmic {
-        TextAnalyzer::builder(PaliTokenizer::default())
-            .filter(LowerCaser)
-            .filter(stop_word_filter())
-            .filter(AlgorithmicStemmer {})
-            .build()
+        Analyzer::StemAlgorithmic.build()
     } else {
         let reader = Reader::from_path(stem_file_path)?;
         let table = StemTable::try_from(reader)?;
-        TextAnalyzer::builder(PaliTokenizer::default())
-            .filter(LowerCaser)
-            .filter(stop_word_filter())
-            .filter(DictionaryStemmer::from(table))
-            .build()
+        Analyzer::StemDictionary { table }.build()
     };
     let mut token_stream = analyzer.token_stream(text);
     token_stream.process(&mut |token: &Token| print!("{0} ", token.text));
