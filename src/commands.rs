@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -33,10 +33,11 @@ pub enum Command {
     /// Display tokens produced by text analyzer.
     Analyze {
         #[arg(
-            short = 'a',
-            long = "algo",
-            help = "Use algorithmic stemmer")]
-        algorithmic: bool,
+            short = 's',
+            long = "stemmer",
+            default_value = "snowball",
+            help = "Stemmer variant for text analyzer")]
+        stemmer: Stemmer,
         #[arg(help = "The text to be analyzed")]
         text: String,
     },
@@ -61,4 +62,12 @@ pub enum Command {
         )]
         number: usize,
     },
+}
+
+#[derive(Copy, Clone, Debug, ValueEnum)]
+pub enum Stemmer {
+    /// Use snowball algorithm
+    Snowball,
+    /// Use dictionary lookup
+    Dictionary,
 }

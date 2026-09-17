@@ -1,18 +1,19 @@
 mod algo_stemmer;
+pub mod analyzers;
 pub mod commands;
 mod dict_stemmer;
 pub mod dpd;
 pub mod snowball;
+mod stop_words;
 pub mod table;
 #[cfg(test)]
 pub mod tests;
 pub mod texts;
 pub mod tokenizer;
 pub mod vocabulary;
-mod stop_words;
-pub mod analyzers;
 
 use crate::analyzers::AnalyzerConfig;
+use crate::commands::Stemmer;
 use crate::dpd::Dictionary;
 use crate::stop_words::most_frequent_words;
 use crate::table::StemTable;
@@ -33,8 +34,8 @@ fn main() -> Result<()> {
         Command::StemTable => {
             create_stem_table(&args.texts, &args.dpd_db, &args.stem_file)?;
         }
-        Command::Analyze { algorithmic, text } => {
-            analyze_text(algorithmic, text.as_str(), &args.stem_file)?;
+        Command::Analyze { stemmer, text } => {
+            analyze_text(stemmer, text.as_str(), &args.stem_file)?;
         }
         Command::DpdLookup { term } => {
             lookup_term_in_dictionary(term.as_str(), args.dpd_db.as_path())?;
@@ -69,11 +70,12 @@ fn create_stem_table(
     Ok(())
 }
 
-fn analyze_text(algorithmic: bool, text: &str, stem_file_path: &Path) -> Result<()> {
-    let config = if algorithmic {
-        AnalyzerConfig::Algorithmic
-    } else {
-        AnalyzerConfig::Dictionary { stem_file: stem_file_path.to_path_buf() }
+fn analyze_text(stemmer: Stemmer, text: &str, stem_file_path: &Path) -> Result<()> {
+    let config = match stemmer {
+        Stemmer::Snowball => AnalyzerConfig::Algorithmic,
+        Stemmer::Dictionary => AnalyzerConfig::Dictionary {
+            stem_file: stem_file_path.to_path_buf(),
+        },
     };
     let mut analyzer = TextAnalyzer::try_from(config)?;
     let mut token_stream = analyzer.token_stream(text);
@@ -123,5 +125,4 @@ fn show_stop_words(texts_path: PathBuf, number: usize) {
     for word in most_frequent_words(files.segments(), number) {
         println!("{word}");
     }
-
 }
