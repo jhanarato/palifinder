@@ -11,6 +11,7 @@ pub mod tests;
 pub mod texts;
 pub mod tokenizer;
 pub mod vocabulary;
+pub mod index;
 
 use crate::analyzers::AnalyzerConfig;
 use crate::commands::Stemmer;
