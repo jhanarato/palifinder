@@ -11,7 +11,7 @@ The main objectives:
 - [X] Test the performance of the algorithmic stemmer against the "perfect" dictionary stemmer.
 - [X] Investigate RAM usage of dictionary stemmer. (Probably around 5MB)
 - [X] Create a stop word filter.
-- [ ] Create a document schema.
+- [X] Create a document schema.
 - [ ] Create documents from Pāli JSON.
 - [ ] Index documents.
 - [ ] Use queries to retrieve the documents.
