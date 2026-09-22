@@ -5,6 +5,8 @@ use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions}
 use tantivy::tokenizer::TextAnalyzer;
 use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument};
 
+const PLI_ALGORITHMIC: &str = "pli_algorithmic";
+
 fn schema() -> Schema {
     let mut schema_builder = Schema::builder();
 
@@ -20,7 +22,7 @@ fn schema() -> Schema {
 
     let contents_options = TextOptions::default().set_indexing_options(
         TextFieldIndexing::default()
-            .set_tokenizer("pli_algorithmic")
+            .set_tokenizer(PLI_ALGORITHMIC)
             .set_index_option(IndexRecordOption::WithFreqsAndPositions),
     );
 
@@ -37,7 +39,8 @@ pub fn create_index_in_ram_with_document() {
         .schema(schema.clone())
         .create_in_ram()
         .unwrap();
-    index.tokenizers().register("pli_stem", pli_stem);
+
+    index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
 
     let mut index_writer: IndexWriter = index.writer(50_000_000).unwrap();
 
