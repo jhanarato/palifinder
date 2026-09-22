@@ -1,13 +1,11 @@
 use crate::analyzers::AnalyzerConfig;
+use tantivy::collector::TopDocs;
+use tantivy::query::QueryParser;
 use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer::TextAnalyzer;
 use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument};
-use tantivy::collector::TopDocs;
-use tantivy::query::QueryParser;
 
-#[allow(unused)]
-#[allow(clippy::missing_panics_doc)]
-pub fn create_index_in_ram_with_document() {
+fn schema() -> Schema {
     let mut schema_builder = Schema::builder();
 
     let uid_options = TextOptions::default()
@@ -22,13 +20,18 @@ pub fn create_index_in_ram_with_document() {
 
     let contents_options = TextOptions::default().set_indexing_options(
         TextFieldIndexing::default()
-            .set_tokenizer("pli_stem")
+            .set_tokenizer("pli_algorithmic")
             .set_index_option(IndexRecordOption::WithFreqsAndPositions),
     );
 
     schema_builder.add_text_field("contents", contents_options);
-    let schema = schema_builder.build();
+    schema_builder.build()
+}
 
+#[allow(unused)]
+#[allow(clippy::missing_panics_doc)]
+pub fn create_index_in_ram_with_document() {
+    let schema = schema();
     let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic).unwrap();
     let index = Index::builder()
         .schema(schema.clone())
@@ -64,7 +67,9 @@ pub fn create_index_in_ram_with_document() {
 
     let query = query_parser.parse_query("vihar").unwrap();
 
-    let top_docs = searcher.search(&query, &TopDocs::with_limit(10).order_by_score()).unwrap();
+    let top_docs = searcher
+        .search(&query, &TopDocs::with_limit(10).order_by_score())
+        .unwrap();
 
     for (_score, doc_address) in top_docs {
         let retrieved_doc: TantivyDocument = searcher.doc(doc_address).unwrap();
