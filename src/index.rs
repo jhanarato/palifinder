@@ -39,8 +39,7 @@ pub fn create_index_in_ram_with_document() -> Result<Vec<String>>{
         .schema(schema.clone())
         .create_in_ram()?;
 
-    let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic)?;
-    index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
+    register_analyzer(&index)?;
 
     let mut index_writer: IndexWriter = index.writer(50_000_000)?;
 
@@ -78,6 +77,12 @@ pub fn create_index_in_ram_with_document() -> Result<Vec<String>>{
         json_documents.push(retrieved_doc.to_json(&schema));
     }
     Ok(json_documents)
+}
+
+fn register_analyzer(index: &Index) -> Result<()> {
+    let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic)?;
+    index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
+    Ok(())
 }
 
 #[cfg(test)]
