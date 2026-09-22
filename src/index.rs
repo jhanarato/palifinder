@@ -4,6 +4,7 @@ use tantivy::query::QueryParser;
 use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer::TextAnalyzer;
 use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument};
+use anyhow::Result;
 
 const PLI_ALGORITHMIC: &str = "pli_algorithmic";
 
@@ -31,21 +32,20 @@ fn schema() -> Schema {
 }
 
 #[allow(unused)]
-#[allow(clippy::missing_panics_doc)]
-pub fn create_index_in_ram_with_document() {
+#[allow(clippy::missing_errors_doc)]
+pub fn create_index_in_ram_with_document() -> Result<Vec<String>>{
     let schema = schema();
     let index = Index::builder()
         .schema(schema.clone())
-        .create_in_ram()
-        .unwrap();
+        .create_in_ram()?;
 
-    let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic).unwrap();
+    let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic)?;
     index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
 
-    let mut index_writer: IndexWriter = index.writer(50_000_000).unwrap();
+    let mut index_writer: IndexWriter = index.writer(50_000_000)?;
 
-    let uid = schema.get_field("uid").unwrap();
-    let contents = schema.get_field("contents").unwrap();
+    let uid = schema.get_field("uid")?;
+    let contents = schema.get_field("contents")?;
 
     let mut document = TantivyDocument::default();
     document.add_text(uid, "mn1");
@@ -61,23 +61,23 @@ pub fn create_index_in_ram_with_document() {
     let reader = index
         .reader_builder()
         .reload_policy(ReloadPolicy::OnCommitWithDelay)
-        .try_into()
-        .unwrap();
+        .try_into()?;
 
     let searcher = reader.searcher();
 
     let query_parser = QueryParser::for_index(&index, vec![uid, contents]);
 
-    let query = query_parser.parse_query("vihar").unwrap();
+    let query = query_parser.parse_query("vihar")?;
 
     let top_docs = searcher
-        .search(&query, &TopDocs::with_limit(10).order_by_score())
-        .unwrap();
+        .search(&query, &TopDocs::with_limit(10).order_by_score())?;
 
+    let mut json_documents = Vec::new();
     for (_score, doc_address) in top_docs {
-        let retrieved_doc: TantivyDocument = searcher.doc(doc_address).unwrap();
-        println!("{}", retrieved_doc.to_json(&schema));
+        let retrieved_doc: TantivyDocument = searcher.doc(doc_address)?;
+        json_documents.push(retrieved_doc.to_json(&schema));
     }
+    Ok(json_documents)
 }
 
 #[cfg(test)]
@@ -86,6 +86,7 @@ mod tests {
 
     #[test]
     fn test_create_index_in_ram_with_document() {
-        create_index_in_ram_with_document();
+        let results = create_index_in_ram_with_document().unwrap();
+        assert_eq!(results, vec![String::from("{\"uid\":[\"mn1\"]}")]);
     }
 }
