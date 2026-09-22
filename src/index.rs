@@ -34,12 +34,12 @@ fn schema() -> Schema {
 #[allow(clippy::missing_panics_doc)]
 pub fn create_index_in_ram_with_document() {
     let schema = schema();
-    let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic).unwrap();
     let index = Index::builder()
         .schema(schema.clone())
         .create_in_ram()
         .unwrap();
 
+    let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic).unwrap();
     index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
 
     let mut index_writer: IndexWriter = index.writer(50_000_000).unwrap();
