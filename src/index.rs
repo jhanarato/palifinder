@@ -1,13 +1,14 @@
 use crate::analyzers::AnalyzerConfig;
+use anyhow::Result;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::{doc, Document, Index, IndexWriter, ReloadPolicy, TantivyDocument};
-use anyhow::Result;
+use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument, doc};
 
 const PLI_ALGORITHMIC: &str = "pli_algorithmic";
 
+#[allow(unused)]
 fn schema() -> Schema {
     let mut schema_builder = Schema::builder();
 
@@ -33,14 +34,7 @@ fn schema() -> Schema {
 
 #[allow(unused)]
 #[allow(clippy::missing_errors_doc)]
-pub fn create_index_in_ram_with_document() -> Result<Vec<String>>{
-    let schema = schema();
-    let index = Index::builder()
-        .schema(schema.clone())
-        .create_in_ram()?;
-
-    register_analyzer(&index)?;
-
+pub fn add_document_and_search_for_it(index: &Index, schema: &Schema) -> Result<Vec<String>> {
     let mut index_writer: IndexWriter = index.writer(50_000_000)?;
 
     let uid = schema.get_field("uid")?;
@@ -61,21 +55,21 @@ pub fn create_index_in_ram_with_document() -> Result<Vec<String>>{
 
     let searcher = reader.searcher();
 
-    let query_parser = QueryParser::for_index(&index, vec![contents]);
+    let query_parser = QueryParser::for_index(index, vec![contents]);
 
     let query = query_parser.parse_query("vihar")?;
 
-    let top_docs = searcher
-        .search(&query, &TopDocs::with_limit(10).order_by_score())?;
+    let top_docs = searcher.search(&query, &TopDocs::with_limit(10).order_by_score())?;
 
     let mut json_documents = Vec::new();
     for (_score, doc_address) in top_docs {
         let retrieved_doc: TantivyDocument = searcher.doc(doc_address)?;
-        json_documents.push(retrieved_doc.to_json(&schema));
+        json_documents.push(retrieved_doc.to_json(schema));
     }
     Ok(json_documents)
 }
 
+#[allow(unused)]
 fn register_analyzer(index: &Index) -> Result<()> {
     let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic)?;
     index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
@@ -88,7 +82,14 @@ mod tests {
 
     #[test]
     fn test_create_index_in_ram_with_document() {
-        let results = create_index_in_ram_with_document().unwrap();
+        let schema = schema();
+        let index = Index::builder()
+            .schema(schema.clone())
+            .create_in_ram()
+            .unwrap();
+        register_analyzer(&index).unwrap();
+
+        let results = add_document_and_search_for_it(&index, &schema).unwrap();
         assert_eq!(results, vec![String::from(r#"{"uid":["mn1"]}"#)]);
     }
 }
