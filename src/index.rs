@@ -33,12 +33,30 @@ fn schema() -> Schema {
 }
 
 #[allow(unused)]
-#[allow(clippy::missing_errors_doc)]
-pub fn add_document_and_search_for_it(index: &Index, schema: &Schema) -> Result<Vec<String>> {
-    add_document(index, schema)?;
-    search(index, schema)
+fn register_analyzer(index: &Index) -> Result<()> {
+    let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic)?;
+    index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
+    Ok(())
 }
 
+#[allow(unused)]
+fn add_document(index: &Index, schema: &Schema) -> Result<()> {
+    let mut index_writer: IndexWriter = index.writer(50_000_000)?;
+
+    let uid = schema.get_field("uid")?;
+    let contents = schema.get_field("contents")?;
+
+    index_writer.add_document(doc!(
+        uid => "mn1",
+        contents => "Evaṁ me sutaṁ—",
+        contents => "ekaṁ samayaṁ bhagavā ukkaṭṭhāyaṁ viharati subhagavane sālarājamūle. ",
+    ))?;
+
+    index_writer.commit()?;
+    Ok(())
+}
+
+#[allow(unused)]
 fn search(index: &Index, schema: &Schema) -> Result<Vec<String>> {
     let reader = index
         .reader_builder()
@@ -63,29 +81,6 @@ fn search(index: &Index, schema: &Schema) -> Result<Vec<String>> {
     Ok(json_documents)
 }
 
-fn add_document(index: &Index, schema: &Schema) -> Result<()> {
-    let mut index_writer: IndexWriter = index.writer(50_000_000)?;
-
-    let uid = schema.get_field("uid")?;
-    let contents = schema.get_field("contents")?;
-
-    index_writer.add_document(doc!(
-        uid => "mn1",
-        contents => "Evaṁ me sutaṁ—",
-        contents => "ekaṁ samayaṁ bhagavā ukkaṭṭhāyaṁ viharati subhagavane sālarājamūle. ",
-    ))?;
-
-    index_writer.commit()?;
-    Ok(())
-}
-
-#[allow(unused)]
-fn register_analyzer(index: &Index) -> Result<()> {
-    let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic)?;
-    index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -98,8 +93,8 @@ mod tests {
             .create_in_ram()
             .unwrap();
         register_analyzer(&index).unwrap();
-
-        let results = add_document_and_search_for_it(&index, &schema).unwrap();
+        add_document(&index, &schema).unwrap();
+        let results = search(&index, &schema).unwrap();
         assert_eq!(results, vec![String::from(r#"{"uid":["mn1"]}"#)]);
     }
 }
