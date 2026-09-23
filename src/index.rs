@@ -64,7 +64,7 @@ pub fn create_index_in_ram_with_document() -> Result<Vec<String>>{
 
     let searcher = reader.searcher();
 
-    let query_parser = QueryParser::for_index(&index, vec![uid, contents]);
+    let query_parser = QueryParser::for_index(&index, vec![contents]);
 
     let query = query_parser.parse_query("vihar")?;
 
