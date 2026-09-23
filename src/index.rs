@@ -36,7 +36,10 @@ fn schema() -> Schema {
 #[allow(clippy::missing_errors_doc)]
 pub fn add_document_and_search_for_it(index: &Index, schema: &Schema) -> Result<Vec<String>> {
     add_document(index, schema)?;
+    search(index, schema)
+}
 
+fn search(index: &Index, schema: &Schema) -> Result<Vec<String>> {
     let reader = index
         .reader_builder()
         .reload_policy(ReloadPolicy::OnCommitWithDelay)
