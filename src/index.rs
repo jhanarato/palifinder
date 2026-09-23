@@ -92,6 +92,6 @@ mod tests {
     #[test]
     fn test_create_index_in_ram_with_document() {
         let results = create_index_in_ram_with_document().unwrap();
-        assert_eq!(results, vec![String::from("{\"uid\":[\"mn1\"]}")]);
+        assert_eq!(results, vec![String::from(r#"{"uid":["mn1"]}"#)]);
     }
 }
