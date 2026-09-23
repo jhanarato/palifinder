@@ -3,7 +3,7 @@ use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument};
+use tantivy::{doc, Document, Index, IndexWriter, ReloadPolicy, TantivyDocument};
 use anyhow::Result;
 
 const PLI_ALGORITHMIC: &str = "pli_algorithmic";
@@ -46,15 +46,12 @@ pub fn create_index_in_ram_with_document() -> Result<Vec<String>>{
     let uid = schema.get_field("uid")?;
     let contents = schema.get_field("contents")?;
 
-    let mut document = TantivyDocument::default();
-    document.add_text(uid, "mn1");
-    document.add_text(contents, "Evaṁ me sutaṁ—");
-    document.add_text(
-        contents,
-        "ekaṁ samayaṁ bhagavā ukkaṭṭhāyaṁ viharati subhagavane sālarājamūle. ",
-    );
+    index_writer.add_document(doc!(
+        uid => "mn1",
+        contents => "Evaṁ me sutaṁ—",
+        contents => "ekaṁ samayaṁ bhagavā ukkaṭṭhāyaṁ viharati subhagavane sālarājamūle. ",
+    ))?;
 
-    index_writer.add_document(document);
     index_writer.commit();
 
     let reader = index
