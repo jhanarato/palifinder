@@ -35,18 +35,7 @@ fn schema() -> Schema {
 #[allow(unused)]
 #[allow(clippy::missing_errors_doc)]
 pub fn add_document_and_search_for_it(index: &Index, schema: &Schema) -> Result<Vec<String>> {
-    let mut index_writer: IndexWriter = index.writer(50_000_000)?;
-
-    let uid = schema.get_field("uid")?;
-    let contents = schema.get_field("contents")?;
-
-    index_writer.add_document(doc!(
-        uid => "mn1",
-        contents => "Evaṁ me sutaṁ—",
-        contents => "ekaṁ samayaṁ bhagavā ukkaṭṭhāyaṁ viharati subhagavane sālarājamūle. ",
-    ))?;
-
-    index_writer.commit();
+    add_document(index, schema)?;
 
     let reader = index
         .reader_builder()
@@ -54,6 +43,8 @@ pub fn add_document_and_search_for_it(index: &Index, schema: &Schema) -> Result<
         .try_into()?;
 
     let searcher = reader.searcher();
+
+    let contents = schema.get_field("contents")?;
 
     let query_parser = QueryParser::for_index(index, vec![contents]);
 
@@ -67,6 +58,22 @@ pub fn add_document_and_search_for_it(index: &Index, schema: &Schema) -> Result<
         json_documents.push(retrieved_doc.to_json(schema));
     }
     Ok(json_documents)
+}
+
+fn add_document(index: &Index, schema: &Schema) -> Result<()> {
+    let mut index_writer: IndexWriter = index.writer(50_000_000)?;
+
+    let uid = schema.get_field("uid")?;
+    let contents = schema.get_field("contents")?;
+
+    index_writer.add_document(doc!(
+        uid => "mn1",
+        contents => "Evaṁ me sutaṁ—",
+        contents => "ekaṁ samayaṁ bhagavā ukkaṭṭhāyaṁ viharati subhagavane sālarājamūle. ",
+    ))?;
+
+    index_writer.commit()?;
+    Ok(())
 }
 
 #[allow(unused)]
