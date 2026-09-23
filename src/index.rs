@@ -64,13 +64,9 @@ fn search(index: &Index, schema: &Schema) -> Result<Vec<String>> {
         .try_into()?;
 
     let searcher = reader.searcher();
-
     let contents = schema.get_field("contents")?;
-
     let query_parser = QueryParser::for_index(index, vec![contents]);
-
     let query = query_parser.parse_query("vihar")?;
-
     let top_docs = searcher.search(&query, &TopDocs::with_limit(10).order_by_score())?;
 
     let mut json_documents = Vec::new();
