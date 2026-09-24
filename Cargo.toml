@@ -19,3 +19,7 @@ warnings = "deny"
 
 [lints.clippy]
 pedantic = "deny"
+
+[[bin]]
+name = "pali"
+path = "src/main.rs"
