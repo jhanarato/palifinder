@@ -14,38 +14,38 @@ struct PaliIndex {
 }
 
 #[allow(unused)]
-fn schema() -> Schema {
-    let mut schema_builder = Schema::builder();
-
-    let uid_options = TextOptions::default()
-        .set_indexing_options(
-            TextFieldIndexing::default()
-                .set_tokenizer("raw")
-                .set_index_option(IndexRecordOption::Basic),
-        )
-        .set_stored();
-
-    schema_builder.add_text_field("uid", uid_options);
-
-    let contents_options = TextOptions::default().set_indexing_options(
-        TextFieldIndexing::default()
-            .set_tokenizer(PLI_ALGORITHMIC)
-            .set_index_option(IndexRecordOption::WithFreqsAndPositions),
-    );
-
-    schema_builder.add_text_field("contents", contents_options);
-    schema_builder.build()
-}
-
-#[allow(unused)]
-fn register_analyzer(index: &Index) -> Result<()> {
-    let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic)?;
-    index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
-    Ok(())
-}
-
-#[allow(unused)]
 impl PaliIndex {
+    #[allow(unused)]
+    fn schema() -> Schema {
+        let mut schema_builder = Schema::builder();
+
+        let uid_options = TextOptions::default()
+            .set_indexing_options(
+                TextFieldIndexing::default()
+                    .set_tokenizer("raw")
+                    .set_index_option(IndexRecordOption::Basic),
+            )
+            .set_stored();
+
+        schema_builder.add_text_field("uid", uid_options);
+
+        let contents_options = TextOptions::default().set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer(PLI_ALGORITHMIC)
+                .set_index_option(IndexRecordOption::WithFreqsAndPositions),
+        );
+
+        schema_builder.add_text_field("contents", contents_options);
+        schema_builder.build()
+    }
+
+    #[allow(unused)]
+    fn register_analyzer(index: &Index) -> Result<()> {
+        let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic)?;
+        index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
+        Ok(())
+    }
+
     fn add_document(&self) -> Result<()> {
         let mut index_writer: IndexWriter = self.index.writer(50_000_000)?;
 
@@ -89,12 +89,12 @@ mod tests {
 
     #[test]
     fn test_create_index_in_ram_with_document() {
-        let schema = schema();
+        let schema = PaliIndex::schema();
         let index = Index::builder()
             .schema(schema.clone())
             .create_in_ram()
             .unwrap();
-        register_analyzer(&index).unwrap();
+        PaliIndex::register_analyzer(&index).unwrap();
 
         let pali_index = PaliIndex { schema, index };
         pali_index.add_document().unwrap();
