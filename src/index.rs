@@ -6,8 +6,6 @@ use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions}
 use tantivy::tokenizer::TextAnalyzer;
 use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument, doc};
 
-const PLI_ALGORITHMIC: &str = "pli_algorithmic";
-
 struct PaliIndex {
     schema: Schema,
     index: Index,
@@ -15,12 +13,15 @@ struct PaliIndex {
 
 #[allow(unused)]
 impl PaliIndex {
-    pub fn create_in_ram() -> Result<Self>{
+    const PLI_STEM: &str = "pli_stem";
+
+    pub fn create_in_ram(config: AnalyzerConfig) -> Result<Self>{
+        let analyzer = TextAnalyzer::try_from(config)?;
         let schema = Self::schema();
         let index = Index::builder()
             .schema(schema.clone())
             .create_in_ram()?;
-        Self::register_analyzer(&index)?;
+        index.tokenizers().register(Self::PLI_STEM, analyzer);
         Ok(Self { schema, index })
     }
 
@@ -40,19 +41,12 @@ impl PaliIndex {
 
         let contents_options = TextOptions::default().set_indexing_options(
             TextFieldIndexing::default()
-                .set_tokenizer(PLI_ALGORITHMIC)
+                .set_tokenizer(Self::PLI_STEM)
                 .set_index_option(IndexRecordOption::WithFreqsAndPositions),
         );
 
         schema_builder.add_text_field("contents", contents_options);
         schema_builder.build()
-    }
-
-    #[allow(unused)]
-    fn register_analyzer(index: &Index) -> Result<()> {
-        let pli_stem = TextAnalyzer::try_from(AnalyzerConfig::Algorithmic)?;
-        index.tokenizers().register(PLI_ALGORITHMIC, pli_stem);
-        Ok(())
     }
 
     fn add_document(&self) -> Result<()> {
@@ -98,7 +92,7 @@ mod tests {
 
     #[test]
     fn test_create_index_in_ram_with_document() {
-        let index = PaliIndex::create_in_ram().unwrap();
+        let index = PaliIndex::create_in_ram(AnalyzerConfig::Algorithmic).unwrap();
         index.add_document().unwrap();
         let results = index.search().unwrap();
         assert_eq!(results, vec![String::from(r#"{"uid":["mn1"]}"#)]);
