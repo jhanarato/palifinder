@@ -15,6 +15,15 @@ struct PaliIndex {
 
 #[allow(unused)]
 impl PaliIndex {
+    pub fn create_in_ram() -> Result<Self>{
+        let schema = Self::schema();
+        let index = Index::builder()
+            .schema(schema.clone())
+            .create_in_ram()?;
+        Self::register_analyzer(&index)?;
+        Ok(Self { schema, index })
+    }
+
     #[allow(unused)]
     fn schema() -> Schema {
         let mut schema_builder = Schema::builder();
@@ -89,17 +98,9 @@ mod tests {
 
     #[test]
     fn test_create_index_in_ram_with_document() {
-        let schema = PaliIndex::schema();
-        let index = Index::builder()
-            .schema(schema.clone())
-            .create_in_ram()
-            .unwrap();
-        PaliIndex::register_analyzer(&index).unwrap();
-
-        let pali_index = PaliIndex { schema, index };
-        pali_index.add_document().unwrap();
-        let results = pali_index.search().unwrap();
-
+        let index = PaliIndex::create_in_ram().unwrap();
+        index.add_document().unwrap();
+        let results = index.search().unwrap();
         assert_eq!(results, vec![String::from(r#"{"uid":["mn1"]}"#)]);
     }
 }
