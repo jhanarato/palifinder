@@ -1,6 +1,6 @@
-use std::path::Path;
 use crate::analyzers::AnalyzerConfig;
 use anyhow::Result;
+use std::path::PathBuf;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
@@ -12,30 +12,32 @@ struct PaliIndex {
     index: Index,
 }
 
+pub enum Location {
+    InRam,
+    InDir { path: PathBuf }
+}
+
 #[allow(unused)]
 impl PaliIndex {
     const PLI_STEM: &str = "pli_stem";
 
-    pub fn create_in_ram(config: AnalyzerConfig) -> Result<Self>{
-        let analyzer = TextAnalyzer::try_from(config)?;
+    pub fn create(location: Location, config: AnalyzerConfig) -> Result<Self>{
         let schema = Self::schema();
 
-        let index = Index::builder()
-            .schema(schema.clone())
-            .create_in_ram()?;
+        let index = match location {
+            Location::InRam => {
+                Index::builder()
+                .schema(schema.clone())
+                .create_in_ram()?
+            }
+            Location::InDir { path } => {
+                Index::builder()
+                    .schema(schema.clone())
+                    .create_in_dir(path)?
+            }
+        };
 
-        index.tokenizers().register(Self::PLI_STEM, analyzer);
-        Ok(Self { schema, index })
-    }
-
-    pub fn create_in_dir(config: AnalyzerConfig, index_path: &Path) -> Result<Self>{
         let analyzer = TextAnalyzer::try_from(config)?;
-        let schema = Self::schema();
-
-        let index = Index::builder()
-            .schema(schema.clone())
-            .create_in_dir(index_path)?;
-
         index.tokenizers().register(Self::PLI_STEM, analyzer);
         Ok(Self { schema, index })
     }
@@ -107,7 +109,7 @@ mod tests {
 
     #[test]
     fn test_create_index_in_ram_with_document() {
-        let index = PaliIndex::create_in_ram(AnalyzerConfig::Algorithmic).unwrap();
+        let index = PaliIndex::create(Location::InRam, AnalyzerConfig::Algorithmic).unwrap();
         index.add_document().unwrap();
         let results = index.search().unwrap();
         assert_eq!(results, vec![String::from(r#"{"uid":["mn1"]}"#)]);
