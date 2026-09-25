@@ -1,3 +1,4 @@
+use std::path::Path;
 use crate::analyzers::AnalyzerConfig;
 use anyhow::Result;
 use tantivy::collector::TopDocs;
@@ -18,9 +19,23 @@ impl PaliIndex {
     pub fn create_in_ram(config: AnalyzerConfig) -> Result<Self>{
         let analyzer = TextAnalyzer::try_from(config)?;
         let schema = Self::schema();
+
         let index = Index::builder()
             .schema(schema.clone())
             .create_in_ram()?;
+
+        index.tokenizers().register(Self::PLI_STEM, analyzer);
+        Ok(Self { schema, index })
+    }
+
+    pub fn create_in_dir(config: AnalyzerConfig, index_path: &Path) -> Result<Self>{
+        let analyzer = TextAnalyzer::try_from(config)?;
+        let schema = Self::schema();
+
+        let index = Index::builder()
+            .schema(schema.clone())
+            .create_in_dir(index_path)?;
+
         index.tokenizers().register(Self::PLI_STEM, analyzer);
         Ok(Self { schema, index })
     }
