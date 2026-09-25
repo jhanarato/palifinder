@@ -14,27 +14,21 @@ struct PaliIndex {
 
 pub enum Location {
     InRam,
-    InDir { path: PathBuf }
+    InDir { path: PathBuf },
 }
 
 #[allow(unused)]
 impl PaliIndex {
     const PLI_STEM: &str = "pli_stem";
 
-    pub fn create(location: Location, config: AnalyzerConfig) -> Result<Self>{
+    pub fn create(location: Location, config: AnalyzerConfig) -> Result<Self> {
         let schema = Self::schema();
 
+        let builder = Index::builder().schema(schema.clone());
+
         let index = match location {
-            Location::InRam => {
-                Index::builder()
-                .schema(schema.clone())
-                .create_in_ram()?
-            }
-            Location::InDir { path } => {
-                Index::builder()
-                    .schema(schema.clone())
-                    .create_in_dir(path)?
-            }
+            Location::InRam => builder.create_in_ram()?,
+            Location::InDir { path } => builder.create_in_dir(path)?,
         };
 
         let analyzer = TextAnalyzer::try_from(config)?;
@@ -73,17 +67,18 @@ impl PaliIndex {
         let contents = self.schema.get_field("contents")?;
 
         index_writer.add_document(doc!(
-        uid => "mn1",
-        contents => "Evaṁ me sutaṁ—",
-        contents => "ekaṁ samayaṁ bhagavā ukkaṭṭhāyaṁ viharati subhagavane sālarājamūle. ",
-    ))?;
+            uid => "mn1",
+            contents => "Evaṁ me sutaṁ—",
+            contents => "ekaṁ samayaṁ bhagavā ukkaṭṭhāyaṁ viharati subhagavane sālarājamūle. ",
+        ))?;
 
         index_writer.commit()?;
         Ok(())
     }
 
     fn search(&self) -> Result<Vec<String>> {
-        let reader = self.index
+        let reader = self
+            .index
             .reader_builder()
             .reload_policy(ReloadPolicy::OnCommitWithDelay)
             .try_into()?;
