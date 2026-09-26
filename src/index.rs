@@ -10,6 +10,7 @@ use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument, doc};
 struct PaliIndex {
     schema: Schema,
     index: Index,
+    writer: IndexWriter,
 }
 
 pub enum Location {
@@ -33,7 +34,10 @@ impl PaliIndex {
 
         let analyzer = TextAnalyzer::try_from(config)?;
         index.tokenizers().register(Self::PLI_STEM, analyzer);
-        Ok(Self { schema, index })
+
+        let mut writer: IndexWriter = index.writer(50_000_000)?;
+
+        Ok(Self { schema, index, writer })
     }
 
     #[allow(unused)]
@@ -60,19 +64,17 @@ impl PaliIndex {
         schema_builder.build()
     }
 
-    fn add_document(&self) -> Result<()> {
-        let mut index_writer: IndexWriter = self.index.writer(50_000_000)?;
-
+    fn add_document(&mut self) -> Result<()> {
         let uid = self.schema.get_field("uid")?;
         let contents = self.schema.get_field("contents")?;
 
-        index_writer.add_document(doc!(
+        self.writer.add_document(doc!(
             uid => "mn1",
             contents => "Evaṁ me sutaṁ—",
             contents => "ekaṁ samayaṁ bhagavā ukkaṭṭhāyaṁ viharati subhagavane sālarājamūle. ",
         ))?;
 
-        index_writer.commit()?;
+        self.writer.commit()?;
         Ok(())
     }
 
@@ -104,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_create_index_in_ram_with_document() {
-        let index = PaliIndex::create(Location::InRam, AnalyzerConfig::Algorithmic).unwrap();
+        let mut index = PaliIndex::create(Location::InRam, AnalyzerConfig::Algorithmic).unwrap();
         index.add_document().unwrap();
         let results = index.search().unwrap();
         assert_eq!(results, vec![String::from(r#"{"uid":["mn1"]}"#)]);
