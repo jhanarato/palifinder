@@ -1,12 +1,12 @@
 use crate::analyzers::AnalyzerConfig;
+use crate::texts::PaliText;
 use anyhow::Result;
 use std::path::PathBuf;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument, doc};
-use crate::texts::PaliText;
+use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument};
 
 struct PaliIndex {
     schema: Schema,
@@ -38,7 +38,11 @@ impl PaliIndex {
 
         let mut writer: IndexWriter = index.writer(50_000_000)?;
 
-        Ok(Self { schema, index, writer })
+        Ok(Self {
+            schema,
+            index,
+            writer,
+        })
     }
 
     #[allow(unused)]
@@ -78,20 +82,6 @@ impl PaliIndex {
         Ok(())
     }
 
-    fn add_document(&mut self) -> Result<()> {
-        let uid = self.schema.get_field("uid")?;
-        let contents = self.schema.get_field("contents")?;
-
-        self.writer.add_document(doc!(
-            uid => "mn1",
-            contents => "Evaṁ me sutaṁ—",
-            contents => "ekaṁ samayaṁ bhagavā ukkaṭṭhāyaṁ viharati subhagavane sālarājamūle. ",
-        ))?;
-
-        self.writer.commit()?;
-        Ok(())
-    }
-
     fn search(&self) -> Result<Vec<String>> {
         let reader = self
             .index
@@ -102,7 +92,7 @@ impl PaliIndex {
         let searcher = reader.searcher();
         let contents = self.schema.get_field("contents")?;
         let query_parser = QueryParser::for_index(&self.index, vec![contents]);
-        let query = query_parser.parse_query("vihar")?;
+        let query = query_parser.parse_query("Evaṁ")?;
         let top_docs = searcher.search(&query, &TopDocs::with_limit(10).order_by_score())?;
 
         let mut json_documents = Vec::new();
@@ -117,11 +107,19 @@ impl PaliIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::texts::Segment;
 
     #[test]
-    fn test_create_index_in_ram_with_document() {
+    fn test_create_index_with_document() {
         let mut index = PaliIndex::create(Location::InRam, AnalyzerConfig::Algorithmic).unwrap();
-        index.add_document().unwrap();
+        let text = PaliText {
+            uid: String::from("mn1"),
+            segments: vec![Segment {
+                uid: String::from("mn1:1.1"),
+                text: String::from("Evaṁ me sutaṁ—"),
+            }],
+        };
+        index.add_text(&text).unwrap();
         let results = index.search().unwrap();
         assert_eq!(results, vec![String::from(r#"{"uid":["mn1"]}"#)]);
     }
