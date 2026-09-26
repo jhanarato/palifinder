@@ -58,7 +58,7 @@ pub struct Segment {
 
 impl PaliText {
     #[allow(clippy::missing_errors_doc)]
-    pub fn parse(path: &Path, json: &str) -> Result<Self> {
+    pub fn new(path: &Path, json: &str) -> Result<Self> {
         let uid = path
             .file_stem()
             .context("Bad file stem")?
@@ -91,7 +91,7 @@ impl TryFrom<&PathBuf> for PaliText {
 
     fn try_from(file: &PathBuf) -> std::result::Result<Self, Self::Error> {
         let json = std::fs::read_to_string(file)?;
-        PaliText::parse(file, json.as_str())
+        PaliText::new(file, json.as_str())
     }
 }
 
