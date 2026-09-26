@@ -82,7 +82,7 @@ impl PaliIndex {
         Ok(())
     }
 
-    fn search(&self) -> Result<Vec<String>> {
+    fn search(&self, query: &str) -> Result<Vec<String>> {
         let reader = self
             .index
             .reader_builder()
@@ -92,7 +92,7 @@ impl PaliIndex {
         let searcher = reader.searcher();
         let contents = self.schema.get_field("contents")?;
         let query_parser = QueryParser::for_index(&self.index, vec![contents]);
-        let query = query_parser.parse_query("Evaṁ")?;
+        let query = query_parser.parse_query(query)?;
         let top_docs = searcher.search(&query, &TopDocs::with_limit(10).order_by_score())?;
 
         let mut json_documents = Vec::new();
@@ -120,7 +120,7 @@ mod tests {
             }],
         };
         index.add_text(&text).unwrap();
-        let results = index.search().unwrap();
+        let results = index.search("Evaṁ").unwrap();
         assert_eq!(results, vec![String::from(r#"{"uid":["mn1"]}"#)]);
     }
 }
