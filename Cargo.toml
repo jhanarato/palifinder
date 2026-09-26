@@ -23,3 +23,6 @@ pedantic = "deny"
 [[bin]]
 name = "pali"
 path = "src/main.rs"
+
+[dev-dependencies]
+temp-dir = "0.2.0"

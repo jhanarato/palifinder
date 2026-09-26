@@ -85,6 +85,7 @@ impl TryFrom<&PathBuf> for PaliText {
 
 #[cfg(test)]
 mod tests {
+    use temp_dir::TempDir;
     use super::*;
 
     pub const TEXT_JSON: &str = r#"
@@ -126,5 +127,14 @@ mod tests {
         let text = PaliText::parse(TEXT_JSON).unwrap();
         let segments: Vec<Segment> = text.into_iter().collect();
         assert_eq!(segments, expected_segments());
+    }
+
+    #[test]
+    fn test_pali_text_from_file() {
+        let dir = TempDir::new().unwrap();
+        let file = dir.child("mn1.json");
+        std::fs::write(&file, TEXT_JSON).unwrap();
+        let text = PaliText::try_from(&file.as_path().to_path_buf()).unwrap();
+        assert_eq!(text.segments.len(), 3);
     }
 }
