@@ -4,9 +4,9 @@ use anyhow::Result;
 use std::path::PathBuf;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
-use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
+use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions, Value};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument};
+use tantivy::{Index, IndexWriter, ReloadPolicy, TantivyDocument};
 
 struct PaliIndex {
     schema: Schema,
@@ -90,17 +90,21 @@ impl PaliIndex {
             .try_into()?;
 
         let searcher = reader.searcher();
+        let uid = self.schema.get_field("uid")?;
         let contents = self.schema.get_field("contents")?;
         let query_parser = QueryParser::for_index(&self.index, vec![contents]);
         let query = query_parser.parse_query(query)?;
         let top_docs = searcher.search(&query, &TopDocs::with_limit(10).order_by_score())?;
 
-        let mut json_documents = Vec::new();
+        let mut uids = Vec::new();
         for (_score, doc_address) in top_docs {
             let retrieved_doc: TantivyDocument = searcher.doc(doc_address)?;
-            json_documents.push(retrieved_doc.to_json(&self.schema));
+            if let Some(uid) = retrieved_doc.get_first(uid)
+                && let Some(uid) = uid.as_str() {
+                uids.push(String::from(uid));
+            }
         }
-        Ok(json_documents)
+        Ok(uids)
     }
 }
 
@@ -121,6 +125,6 @@ mod tests {
         };
         index.add_text(&text).unwrap();
         let results = index.search("Evaṁ").unwrap();
-        assert_eq!(results, vec![String::from(r#"{"uid":["mn1"]}"#)]);
+        assert_eq!(results, vec![String::from("mn1")]);
     }
 }
