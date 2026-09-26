@@ -1,4 +1,4 @@
-use anyhow::{Error, Result};
+use anyhow::{Context, Error, Result};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
@@ -14,7 +14,7 @@ impl PaliFiles {
         Self { location }
     }
 
-    pub fn files(&self) -> impl Iterator<Item=PathBuf> {
+    pub fn files(&self) -> impl Iterator<Item = PathBuf> {
         WalkDir::new(&self.location)
             .into_iter()
             .filter_map(Result::ok)
@@ -22,7 +22,7 @@ impl PaliFiles {
             .map(DirEntry::into_path)
     }
 
-    pub fn texts(&self) -> impl Iterator<Item=Result<PaliText>> {
+    pub fn texts(&self) -> impl Iterator<Item = Result<PaliText>> {
         self.files().map(|file| PaliText::try_from(&file))
     }
 
@@ -38,12 +38,15 @@ impl PaliFiles {
     }
 
     pub fn segments(&self) -> impl Iterator<Item = Segment> {
-        self.texts().filter_map(Result::ok).flat_map(|text| text.segments)
+        self.texts()
+            .filter_map(Result::ok)
+            .flat_map(|text| text.segments)
     }
 }
 
 #[derive(Clone, Debug, PartialOrd, PartialEq)]
 pub struct PaliText {
+    pub uid: String,
     pub segments: Vec<Segment>,
 }
 
@@ -55,13 +58,22 @@ pub struct Segment {
 
 impl PaliText {
     #[allow(clippy::missing_errors_doc)]
-    pub fn parse(json: &str) -> Result<Self> {
+    pub fn parse(path: &Path, json: &str) -> Result<Self> {
+        let uid = path
+            .file_stem()
+            .context("Bad file stem")?
+            .to_str()
+            .context("Bad string")?
+            .to_string();
         let entries: BTreeMap<String, String> = serde_json::from_str(json)?;
         let segments: Vec<Segment> = entries
             .iter()
-            .map(|(k, v)| Segment { uid: k.clone(), text: v.clone() })
+            .map(|(k, v)| Segment {
+                uid: k.clone(),
+                text: v.clone(),
+            })
             .collect();
-        Ok(Self { segments })
+        Ok(Self { uid, segments })
     }
 }
 
@@ -79,14 +91,14 @@ impl TryFrom<&PathBuf> for PaliText {
 
     fn try_from(file: &PathBuf) -> std::result::Result<Self, Self::Error> {
         let json = std::fs::read_to_string(file)?;
-        PaliText::parse(json.as_str())
+        PaliText::parse(file, json.as_str())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use temp_dir::TempDir;
     use super::*;
+    use temp_dir::TempDir;
 
     pub const TEXT_JSON: &str = r#"
     {
@@ -97,44 +109,42 @@ mod tests {
     "#;
 
     fn expected_segments() -> Vec<Segment> {
-        vec!(
+        vec![
             Segment {
                 uid: String::from("mn1:0.1"),
-                text: String::from("Majjhima Nikāya 1 ")
+                text: String::from("Majjhima Nikāya 1 "),
             },
             Segment {
                 uid: String::from("mn1:0.2"),
-                text: String::from("Mūlapariyāyasutta ")
+                text: String::from("Mūlapariyāyasutta "),
             },
             Segment {
                 uid: String::from("mn1:1.1"),
-                text: String::from("Evaṁ me sutaṁ—")
+                text: String::from("Evaṁ me sutaṁ—"),
             },
-        )
+        ]
+    }
+
+    fn pali_text_from_file() -> PaliText {
+        let dir = TempDir::new().unwrap();
+        let file = dir.child("mn1.json");
+        std::fs::write(&file, TEXT_JSON).unwrap();
+        PaliText::try_from(&file.as_path().to_path_buf()).unwrap()
     }
 
     #[test]
     fn test_parse_pali_json() {
-        let text = PaliText::parse(TEXT_JSON).unwrap();
-        assert_eq!(
-            text.segments,
-            expected_segments()
-        );
+        assert_eq!(pali_text_from_file().segments, expected_segments());
     }
 
     #[test]
     fn test_pali_text_into_segment_iterator() {
-        let text = PaliText::parse(TEXT_JSON).unwrap();
-        let segments: Vec<Segment> = text.into_iter().collect();
+        let segments: Vec<Segment> = pali_text_from_file().into_iter().collect();
         assert_eq!(segments, expected_segments());
     }
 
     #[test]
-    fn test_pali_text_from_file() {
-        let dir = TempDir::new().unwrap();
-        let file = dir.child("mn1.json");
-        std::fs::write(&file, TEXT_JSON).unwrap();
-        let text = PaliText::try_from(&file.as_path().to_path_buf()).unwrap();
-        assert_eq!(text.segments.len(), 3);
+    fn test_pali_text_has_uid() {
+        assert_eq!(pali_text_from_file().uid, String::from("mn1"));
     }
 }
