@@ -6,6 +6,7 @@ use tantivy::query::QueryParser;
 use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer::TextAnalyzer;
 use tantivy::{Document, Index, IndexWriter, ReloadPolicy, TantivyDocument, doc};
+use crate::texts::PaliText;
 
 struct PaliIndex {
     schema: Schema,
@@ -62,6 +63,19 @@ impl PaliIndex {
 
         schema_builder.add_text_field("contents", contents_options);
         schema_builder.build()
+    }
+
+    pub fn add_text(&mut self, text: &PaliText) -> Result<()> {
+        let uid = self.schema.get_field("uid")?;
+        let contents = self.schema.get_field("contents")?;
+        let mut document = TantivyDocument::default();
+        document.add_text(uid, text.uid.clone());
+        for segment in text.segments.clone() {
+            document.add_text(contents, segment.text);
+        }
+        self.writer.add_document(document)?;
+        self.writer.commit()?;
+        Ok(())
     }
 
     fn add_document(&mut self) -> Result<()> {
