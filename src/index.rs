@@ -8,20 +8,21 @@ use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions,
 use tantivy::tokenizer::TextAnalyzer;
 use tantivy::{Index, IndexWriter, ReloadPolicy, TantivyDocument};
 
-struct PaliIndex {
+pub struct PaliIndex {
     index: Index,
     writer: IndexWriter,
 }
 
 pub enum Location {
     InRam,
-    InDir { path: PathBuf },
+    InDir { index_path: PathBuf },
 }
 
 #[allow(unused)]
 impl PaliIndex {
     const PLI_STEM: &str = "pli_stem";
 
+    #[allow(clippy::missing_errors_doc)]
     pub fn create(location: Location, config: AnalyzerConfig) -> Result<Self> {
         let schema = Self::schema();
 
@@ -29,7 +30,7 @@ impl PaliIndex {
 
         let index = match location {
             Location::InRam => builder.create_in_ram()?,
-            Location::InDir { path } => builder.create_in_dir(path)?,
+            Location::InDir { index_path } => builder.create_in_dir(index_path)?,
         };
 
         let analyzer = TextAnalyzer::try_from(config)?;
@@ -64,6 +65,7 @@ impl PaliIndex {
         schema_builder.build()
     }
 
+    #[allow(clippy::missing_errors_doc)]
     pub fn add_text(&mut self, text: &PaliText) -> Result<()> {
         let uid = self.index.schema().get_field("uid")?;
         let contents = self.index.schema().get_field("contents")?;

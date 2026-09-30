@@ -31,6 +31,13 @@ pub struct Arguments {
         help = "Stemmer variant for text analyzer")]
     pub stemmer: Stemmer,
 
+    #[arg(
+        long = "index-dir",
+        default_value = "index",
+        help = "Location of index",
+    )]
+    pub index_path: PathBuf,
+
     #[command(subcommand)]
     pub command: Command,
 }
@@ -63,6 +70,8 @@ pub enum Command {
         )]
         number: usize,
     },
+    /// Create or recreate an index.
+    Index,
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]

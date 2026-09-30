@@ -16,6 +16,7 @@ pub mod index;
 use crate::analyzers::AnalyzerConfig;
 use crate::commands::Stemmer;
 use crate::dpd::Dictionary;
+use crate::index::{Location, PaliIndex};
 use crate::stop_words::most_frequent_words;
 use crate::table::StemTable;
 use crate::texts::PaliFiles;
@@ -49,6 +50,9 @@ fn main() -> Result<()> {
         }
         Command::StopWords { number } => {
             show_stop_words(args.texts, number);
+        }
+        Command::Index => {
+            create_index(args.texts, args.index_path, args.stem_file, args.stemmer)?;
         }
     }
     Ok(())
@@ -126,4 +130,22 @@ fn show_stop_words(texts_path: PathBuf, number: usize) {
     for word in most_frequent_words(files.segments(), number) {
         println!("{word}");
     }
+}
+
+fn create_index(texts_path: PathBuf, index_path: PathBuf, stem_file_path: PathBuf, stemmer: Stemmer) -> Result<()>{
+    std::fs::create_dir_all(&index_path)?;
+    let config = match stemmer {
+        Stemmer::Snowball => AnalyzerConfig::Algorithmic,
+        Stemmer::Dictionary => AnalyzerConfig::Dictionary { stem_file: stem_file_path },
+    };
+    let files = PaliFiles::new(texts_path);
+    let mut index = PaliIndex::create(Location::InDir {index_path}, config)?;
+
+    for text in files.texts() {
+        match text {
+            Ok(text) => index.add_text(&text)?,
+            Err(e) => println!("Error: {e:#?}"),
+        }
+    }
+    Ok(())
 }
