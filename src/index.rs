@@ -9,7 +9,6 @@ use tantivy::tokenizer::TextAnalyzer;
 use tantivy::{Index, IndexWriter, ReloadPolicy, TantivyDocument};
 
 struct PaliIndex {
-    schema: Schema,
     index: Index,
     writer: IndexWriter,
 }
@@ -38,11 +37,7 @@ impl PaliIndex {
 
         let mut writer: IndexWriter = index.writer(50_000_000)?;
 
-        Ok(Self {
-            schema,
-            index,
-            writer,
-        })
+        Ok(Self { index, writer })
     }
 
     #[allow(unused)]
@@ -70,8 +65,8 @@ impl PaliIndex {
     }
 
     pub fn add_text(&mut self, text: &PaliText) -> Result<()> {
-        let uid = self.schema.get_field("uid")?;
-        let contents = self.schema.get_field("contents")?;
+        let uid = self.index.schema().get_field("uid")?;
+        let contents = self.index.schema().get_field("contents")?;
         let mut document = TantivyDocument::default();
         document.add_text(uid, text.uid.clone());
         for segment in text.segments.clone() {
@@ -90,8 +85,8 @@ impl PaliIndex {
             .try_into()?;
 
         let searcher = reader.searcher();
-        let uid = self.schema.get_field("uid")?;
-        let contents = self.schema.get_field("contents")?;
+        let uid = self.index.schema().get_field("uid")?;
+        let contents = self.index.schema().get_field("contents")?;
         let query_parser = QueryParser::for_index(&self.index, vec![contents]);
         let query = query_parser.parse_query(query)?;
         let top_docs = searcher.search(&query, &TopDocs::with_limit(10).order_by_score())?;
@@ -100,7 +95,8 @@ impl PaliIndex {
         for (_score, doc_address) in top_docs {
             let retrieved_doc: TantivyDocument = searcher.doc(doc_address)?;
             if let Some(uid) = retrieved_doc.get_first(uid)
-                && let Some(uid) = uid.as_str() {
+                && let Some(uid) = uid.as_str()
+            {
                 uids.push(String::from(uid));
             }
         }
