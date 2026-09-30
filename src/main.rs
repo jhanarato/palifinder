@@ -35,8 +35,8 @@ fn main() -> Result<()> {
         Command::StemTable => {
             create_stem_table(&args.texts, &args.dpd_db, &args.stem_file)?;
         }
-        Command::Analyze { stemmer, text } => {
-            analyze_text(stemmer, text.as_str(), &args.stem_file)?;
+        Command::Analyze { text } => {
+            analyze_text(args.stemmer, text.as_str(), &args.stem_file)?;
         }
         Command::DpdLookup { term } => {
             lookup_term_in_dictionary(term.as_str(), args.dpd_db.as_path())?;

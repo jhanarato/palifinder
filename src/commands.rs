@@ -24,6 +24,13 @@ pub struct Arguments {
     )]
     pub stem_file: PathBuf,
 
+    #[arg(
+        short = 's',
+        long = "stemmer",
+        default_value = "snowball",
+        help = "Stemmer variant for text analyzer")]
+    pub stemmer: Stemmer,
+
     #[command(subcommand)]
     pub command: Command,
 }
@@ -32,12 +39,6 @@ pub struct Arguments {
 pub enum Command {
     /// Display tokens produced by text analyzer.
     Analyze {
-        #[arg(
-            short = 's',
-            long = "stemmer",
-            default_value = "snowball",
-            help = "Stemmer variant for text analyzer")]
-        stemmer: Stemmer,
         #[arg(help = "The text to be analyzed")]
         text: String,
     },
