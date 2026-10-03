@@ -28,13 +28,14 @@ pub struct Arguments {
         short = 's',
         long = "stemmer",
         default_value = "snowball",
-        help = "Stemmer variant for text analyzer")]
+        help = "Stemmer variant for text analyzer"
+    )]
     pub stemmer: Stemmer,
 
     #[arg(
         long = "index-dir",
         default_value = "index",
-        help = "Location of index",
+        help = "Location of index"
     )]
     pub index_path: PathBuf,
 
@@ -72,6 +73,11 @@ pub enum Command {
     },
     /// Create or recreate an index.
     Index,
+    /// Search the index with a query
+    Find {
+        #[arg(trailing_var_arg = true)]
+        query: Vec<String>,
+    },
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]

@@ -54,6 +54,7 @@ fn main() -> Result<()> {
         Command::Index => {
             create_index(args.texts, args.index_path, args.stem_file, args.stemmer)?;
         }
+        Command::Find { query } => println!("{query:#?}")
     }
     Ok(())
 }
