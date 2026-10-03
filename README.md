@@ -12,9 +12,10 @@ The main objectives:
 - [X] Investigate RAM usage of dictionary stemmer. (Probably around 5MB)
 - [X] Create a stop word filter.
 - [X] Create a document schema.
-- [ ] Create documents from Pāli JSON.
-- [ ] Index documents.
+- [X] Create documents from Pāli JSON.
+- [X] Index documents.
 - [ ] Use queries to retrieve the documents.
+- [ ] Generate snippets for search results.
 
 # Instructions
 
