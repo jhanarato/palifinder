@@ -28,6 +28,7 @@ use commands::{Arguments, Command};
 use rusqlite::Connection;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
+use itertools::join;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
 
 fn main() -> Result<()> {
@@ -54,7 +55,9 @@ fn main() -> Result<()> {
         Command::Index => {
             create_index(args.texts, args.index_path, args.stem_file, args.stemmer)?;
         }
-        Command::Find { query } => println!("{query:#?}")
+        Command::Find { query } => {
+            search_index(&args.index_path, args.stem_file, args.stemmer, query)?;
+        }
     }
     Ok(())
 }
@@ -133,20 +136,34 @@ fn show_stop_words(texts_path: PathBuf, number: usize) {
     }
 }
 
-fn create_index(texts_path: PathBuf, index_path: PathBuf, stem_file_path: PathBuf, stemmer: Stemmer) -> Result<()>{
+fn create_index(texts_path: PathBuf, index_path: PathBuf, stem_file_path: PathBuf, stemmer: Stemmer) -> Result<()> {
     std::fs::create_dir_all(&index_path)?;
     let config = match stemmer {
         Stemmer::Snowball => AnalyzerConfig::Algorithmic,
         Stemmer::Dictionary => AnalyzerConfig::Dictionary { stem_file: stem_file_path },
     };
     let files = PaliFiles::new(texts_path);
-    let mut index = PaliIndex::create(Location::InDir {index_path}, config)?;
+    let mut index = PaliIndex::create(Location::InDir { index_path }, config)?;
 
     for text in files.texts() {
         match text {
             Ok(text) => index.add_text(&text)?,
             Err(e) => println!("Error: {e:#?}"),
         }
+    }
+    Ok(())
+}
+
+fn search_index(index_path: &Path, stem_file_path: PathBuf, stemmer: Stemmer, query: Vec<String>) -> Result<()> {
+    let config = match stemmer {
+        Stemmer::Snowball => AnalyzerConfig::Algorithmic,
+        Stemmer::Dictionary => AnalyzerConfig::Dictionary { stem_file: stem_file_path },
+    };
+    let index = PaliIndex::open(index_path, config)?;
+    let query = join(query, " ");
+    let results = index.search(query.as_str())?;
+    for result in results {
+        println!("{result}");
     }
     Ok(())
 }

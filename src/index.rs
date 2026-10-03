@@ -1,16 +1,15 @@
 use crate::analyzers::AnalyzerConfig;
 use crate::texts::PaliText;
 use anyhow::Result;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions, Value};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::{Index, IndexWriter, ReloadPolicy, TantivyDocument};
+use tantivy::{Index, ReloadPolicy, TantivyDocument};
 
 pub struct PaliIndex {
     index: Index,
-    writer: IndexWriter,
 }
 
 pub enum Location {
@@ -36,9 +35,15 @@ impl PaliIndex {
         let analyzer = TextAnalyzer::try_from(config)?;
         index.tokenizers().register(Self::PLI_STEM, analyzer);
 
-        let mut writer: IndexWriter = index.writer(50_000_000)?;
+        Ok(Self { index })
+    }
 
-        Ok(Self { index, writer })
+    #[allow(clippy::missing_errors_doc)]
+    pub fn open(path: &Path, config: AnalyzerConfig) -> Result<Self> {
+        let index = Index::open_in_dir(path)?;
+        let analyzer = TextAnalyzer::try_from(config)?;
+        index.tokenizers().register(Self::PLI_STEM, analyzer);
+        Ok(Self { index })
     }
 
     #[allow(unused)]
@@ -74,12 +79,14 @@ impl PaliIndex {
         for segment in text.segments.clone() {
             document.add_text(contents, segment.text);
         }
-        self.writer.add_document(document)?;
-        self.writer.commit()?;
+        let mut writer = self.index.writer(50_000_000)?;
+        writer.add_document(document)?;
+        writer.commit()?;
         Ok(())
     }
 
-    fn search(&self, query: &str) -> Result<Vec<String>> {
+    #[allow(clippy::missing_errors_doc)]
+    pub fn search(&self, query: &str) -> Result<Vec<String>> {
         let reader = self
             .index
             .reader_builder()

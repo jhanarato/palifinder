@@ -14,7 +14,7 @@ The main objectives:
 - [X] Create a document schema.
 - [X] Create documents from Pāli JSON.
 - [X] Index documents.
-- [ ] Use queries to retrieve the documents.
+- [X] Use queries to retrieve the documents.
 - [ ] Generate snippets for search results.
 
 # Instructions
