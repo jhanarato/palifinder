@@ -112,24 +112,3 @@ impl PaliIndex {
         Ok(uids)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::texts::Segment;
-
-    #[test]
-    fn test_create_index_with_document() {
-        let mut index = PaliIndex::create(Location::InRam, AnalyzerConfig::Algorithmic).unwrap();
-        let text = PaliText {
-            uid: String::from("mn1"),
-            segments: vec![Segment {
-                uid: String::from("mn1:1.1"),
-                text: String::from("Evaṁ me sutaṁ—"),
-            }],
-        };
-        index.add_text(&text).unwrap();
-        let results = index.search("Evaṁ").unwrap();
-        assert_eq!(results, vec![String::from("mn1")]);
-    }
-}

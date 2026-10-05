@@ -45,12 +45,6 @@ impl PaliFiles {
 }
 
 #[derive(Clone, Debug, PartialOrd, PartialEq)]
-pub struct PaliText {
-    pub uid: String,
-    pub segments: Vec<Segment>,
-}
-
-#[derive(Clone, Debug, PartialOrd, PartialEq)]
 pub struct Segment {
     pub uid: String,
     pub text: String,
@@ -77,16 +71,22 @@ impl TryFrom<&Path> for TextUid {
     }
 }
 
+impl AsRef<str> for TextUid {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+#[derive(Clone, Debug, PartialOrd, PartialEq)]
+pub struct PaliText {
+    pub uid: TextUid,
+    pub segments: Vec<Segment>,
+}
+
 impl PaliText {
     #[allow(clippy::missing_errors_doc)]
     pub fn new(path: &Path) -> Result<Self> {
-        // TODO uid is wrong. Need to parse.
-        let uid = path
-            .file_stem()
-            .context("Bad file stem")?
-            .to_str()
-            .context("Bad string")?
-            .to_string();
+        let uid = TextUid::try_from(path)?;
 
         let json = std::fs::read_to_string(path)?;
         let entries: BTreeMap<String, String> = serde_json::from_str(json.as_str())?;
@@ -142,7 +142,7 @@ mod tests {
 
     fn pali_text_from_file() -> PaliText {
         let dir = TempDir::new().unwrap();
-        let file = dir.child("mn1.json");
+        let file = dir.child("mn1_root-pli-ms.json");
         std::fs::write(&file, TEXT_JSON).unwrap();
         PaliText::new(file.as_path()).unwrap()
     }
@@ -160,7 +160,7 @@ mod tests {
 
     #[test]
     fn test_pali_text_has_uid() {
-        assert_eq!(pali_text_from_file().uid, String::from("mn1"));
+        assert_eq!(pali_text_from_file().uid, TextUid(String::from("mn1")));
     }
 
     #[test]
