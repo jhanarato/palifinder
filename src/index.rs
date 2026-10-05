@@ -6,10 +6,11 @@ use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions, Value};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::{Index, ReloadPolicy, TantivyDocument};
+use tantivy::{Index, IndexWriter, ReloadPolicy, TantivyDocument};
 
 pub struct PaliIndex {
     index: Index,
+    writer: IndexWriter,
 }
 
 pub enum Location {
@@ -35,7 +36,9 @@ impl PaliIndex {
         let analyzer = TextAnalyzer::try_from(config)?;
         index.tokenizers().register(Self::PLI_STEM, analyzer);
 
-        Ok(Self { index })
+        let mut writer = index.writer(50_000_000)?;
+
+        Ok(Self { index, writer })
     }
 
     #[allow(clippy::missing_errors_doc)]
@@ -43,7 +46,8 @@ impl PaliIndex {
         let index = Index::open_in_dir(path)?;
         let analyzer = TextAnalyzer::try_from(config)?;
         index.tokenizers().register(Self::PLI_STEM, analyzer);
-        Ok(Self { index })
+        let mut writer = index.writer(50_000_000)?;
+        Ok(Self { index, writer })
     }
 
     #[allow(unused)]
@@ -75,13 +79,13 @@ impl PaliIndex {
         let uid = self.index.schema().get_field("uid")?;
         let contents = self.index.schema().get_field("contents")?;
         let mut document = TantivyDocument::default();
-        document.add_text(uid, text.uid.clone());
+        document.add_text(uid, text.uid.as_ref());
         for segment in text.segments.clone() {
             document.add_text(contents, segment.text);
         }
-        let mut writer = self.index.writer(50_000_000)?;
-        writer.add_document(document)?;
-        writer.commit()?;
+
+        self.writer.add_document(document)?;
+        self.writer.commit()?;
         Ok(())
     }
 
