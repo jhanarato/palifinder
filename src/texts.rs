@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Result};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
@@ -23,7 +23,7 @@ impl PaliFiles {
     }
 
     pub fn texts(&self) -> impl Iterator<Item = Result<PaliText>> {
-        self.files().map(|file| PaliText::try_from(&file))
+        self.files().map(|file| PaliText::new(&file))
     }
 
     fn is_pali_file(path: &Path) -> bool {
@@ -58,14 +58,16 @@ pub struct Segment {
 
 impl PaliText {
     #[allow(clippy::missing_errors_doc)]
-    pub fn new(path: &Path, json: &str) -> Result<Self> {
+    pub fn new(path: &Path) -> Result<Self> {
         let uid = path
             .file_stem()
             .context("Bad file stem")?
             .to_str()
             .context("Bad string")?
             .to_string();
-        let entries: BTreeMap<String, String> = serde_json::from_str(json)?;
+
+        let json = std::fs::read_to_string(path)?;
+        let entries: BTreeMap<String, String> = serde_json::from_str(json.as_str())?;
         let segments: Vec<Segment> = entries
             .iter()
             .map(|(k, v)| Segment {
@@ -83,15 +85,6 @@ impl IntoIterator for PaliText {
 
     fn into_iter(self) -> Self::IntoIter {
         self.segments.into_iter()
-    }
-}
-
-impl TryFrom<&PathBuf> for PaliText {
-    type Error = Error;
-
-    fn try_from(file: &PathBuf) -> std::result::Result<Self, Self::Error> {
-        let json = std::fs::read_to_string(file)?;
-        PaliText::new(file, json.as_str())
     }
 }
 
@@ -129,7 +122,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let file = dir.child("mn1.json");
         std::fs::write(&file, TEXT_JSON).unwrap();
-        PaliText::try_from(&file.as_path().to_path_buf()).unwrap()
+        PaliText::new(file.as_path()).unwrap()
     }
 
     #[test]
