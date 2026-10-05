@@ -167,6 +167,6 @@ mod tests {
     fn test_uid_created_from_path() {
         let path = Path::new("root/pli/ms/sutta/mn/mn1_root-pli-ms.json");
         let uid = TextUid::try_from(path).unwrap();
-        assert_eq!(uid, TextUid(String::from("mn1")));
+        assert_eq!(uid.as_ref(), "mn1");
     }
 }
