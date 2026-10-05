@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Error, Result};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
@@ -56,9 +56,31 @@ pub struct Segment {
     pub text: String,
 }
 
+#[derive(Clone, Debug, PartialOrd, PartialEq)]
+pub struct TextUid(String);
+
+impl TryFrom<&Path> for TextUid {
+    type Error = Error;
+    fn try_from(path: &Path) -> Result<TextUid, Error> {
+        let stem_str = path
+            .file_stem()
+            .context("Bad file stem")?
+            .to_str()
+            .context("Bad string")?
+            .to_string();
+
+        let uid = stem_str
+            .split('_')
+            .next()
+            .context("Failed to extract text UID from filename.")?;
+        Ok(TextUid(uid.to_string()))
+    }
+}
+
 impl PaliText {
     #[allow(clippy::missing_errors_doc)]
     pub fn new(path: &Path) -> Result<Self> {
+        // TODO uid is wrong. Need to parse.
         let uid = path
             .file_stem()
             .context("Bad file stem")?
@@ -139,5 +161,12 @@ mod tests {
     #[test]
     fn test_pali_text_has_uid() {
         assert_eq!(pali_text_from_file().uid, String::from("mn1"));
+    }
+
+    #[test]
+    fn test_uid_created_from_path() {
+        let path = Path::new("root/pli/ms/sutta/mn/mn1_root-pli-ms.json");
+        let uid = TextUid::try_from(path).unwrap();
+        assert_eq!(uid, TextUid(String::from("mn1")));
     }
 }
