@@ -1,11 +1,9 @@
 use crate::analyzers::AnalyzerConfig;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
-use tantivy::collector::TopDocs;
-use tantivy::query::QueryParser;
-use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions, Value};
+use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::{Index, ReloadPolicy, TantivyDocument};
+use tantivy::Index;
 
 pub struct PaliIndex {
     index: Index,
@@ -66,33 +64,6 @@ impl PaliIndex {
 
         schema_builder.add_text_field("contents", contents_options);
         schema_builder.build()
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub fn search(&self, query: &str) -> Result<Vec<String>> {
-        let reader = self
-            .index
-            .reader_builder()
-            .reload_policy(ReloadPolicy::OnCommitWithDelay)
-            .try_into()?;
-
-        let searcher = reader.searcher();
-        let uid = self.index.schema().get_field("uid")?;
-        let contents = self.index.schema().get_field("contents")?;
-        let query_parser = QueryParser::for_index(&self.index, vec![contents]);
-        let query = query_parser.parse_query(query)?;
-        let top_docs = searcher.search(&query, &TopDocs::with_limit(10).order_by_score())?;
-
-        let mut uids = Vec::new();
-        for (_score, doc_address) in top_docs {
-            let retrieved_doc: TantivyDocument = searcher.doc(doc_address)?;
-            if let Some(uid) = retrieved_doc.get_first(uid)
-                && let Some(uid) = uid.as_str()
-            {
-                uids.push(String::from(uid));
-            }
-        }
-        Ok(uids)
     }
 }
 

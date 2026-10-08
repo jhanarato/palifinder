@@ -33,6 +33,7 @@ use std::collections::BTreeSet;
 use std::fs::{create_dir_all, remove_dir_all};
 use std::path::{Path, PathBuf};
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
+use crate::search::PaliSearcher;
 use crate::writer::PaliWriter;
 
 fn main() -> Result<()> {
@@ -170,7 +171,8 @@ fn search_index(index_path: &Path, stem_file_path: PathBuf, stemmer: Stemmer, qu
     };
     let index = PaliIndex::open(index_path, config)?;
     let query = join(query, " ");
-    let results = index.search(query.as_str())?;
+    let searcher = PaliSearcher::new(index.as_ref())?;
+    let results = searcher.search(query.as_str())?;
     for result in results {
         println!("{result}");
     }
