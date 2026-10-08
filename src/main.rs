@@ -12,6 +12,7 @@ pub mod texts;
 pub mod tokenizer;
 pub mod vocabulary;
 pub mod index;
+mod writer;
 
 use crate::analyzers::AnalyzerConfig;
 use crate::commands::Stemmer;
@@ -25,10 +26,11 @@ use crate::vocabulary::Vocabulary;
 use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
+use itertools::join;
 use rusqlite::Connection;
 use std::collections::BTreeSet;
+use std::fs::{create_dir_all, remove_dir_all};
 use std::path::{Path, PathBuf};
-use itertools::join;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
 
 fn main() -> Result<()> {
@@ -137,7 +139,10 @@ fn show_stop_words(texts_path: PathBuf, number: usize) {
 }
 
 fn create_index(texts_path: PathBuf, index_path: PathBuf, stem_file_path: PathBuf, stemmer: Stemmer) -> Result<()> {
-    std::fs::create_dir_all(&index_path)?;
+    if index_path.exists() {
+        remove_dir_all(&index_path)?;
+    }
+    create_dir_all(&index_path)?;
     let config = match stemmer {
         Stemmer::Snowball => AnalyzerConfig::Algorithmic,
         Stemmer::Dictionary => AnalyzerConfig::Dictionary { stem_file: stem_file_path },
