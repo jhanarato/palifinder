@@ -3,13 +3,13 @@ use anyhow::Result;
 use tantivy::schema::Field;
 use tantivy::{Index, IndexWriter, TantivyDocument};
 
-pub struct PaliIndexWriter {
+pub struct PaliWriter {
     writer: IndexWriter,
     uid: Field,
     contents: Field,
 }
 
-impl PaliIndexWriter {
+impl PaliWriter {
     pub fn new(index: &Index) -> Result<Self> {
         Ok(Self {
             writer: index.writer(50_000_000)?,
