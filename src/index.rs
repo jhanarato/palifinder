@@ -1,16 +1,14 @@
 use crate::analyzers::AnalyzerConfig;
-use crate::texts::PaliText;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions, Value};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::{Index, IndexWriter, ReloadPolicy, TantivyDocument};
+use tantivy::{Index, ReloadPolicy, TantivyDocument};
 
 pub struct PaliIndex {
     index: Index,
-    writer: IndexWriter,
 }
 
 pub enum Location {
@@ -18,7 +16,6 @@ pub enum Location {
     InDir { index_path: PathBuf },
 }
 
-#[allow(unused)]
 impl PaliIndex {
     const PLI_STEM: &str = "pli_stem";
 
@@ -36,9 +33,7 @@ impl PaliIndex {
         let analyzer = TextAnalyzer::try_from(config)?;
         index.tokenizers().register(Self::PLI_STEM, analyzer);
 
-        let mut writer = index.writer(50_000_000)?;
-
-        Ok(Self { index, writer })
+        Ok(Self { index })
     }
 
     #[allow(clippy::missing_errors_doc)]
@@ -46,8 +41,7 @@ impl PaliIndex {
         let index = Index::open_in_dir(path)?;
         let analyzer = TextAnalyzer::try_from(config)?;
         index.tokenizers().register(Self::PLI_STEM, analyzer);
-        let mut writer = index.writer(50_000_000)?;
-        Ok(Self { index, writer })
+        Ok(Self { index })
     }
 
     #[allow(unused)]
@@ -75,21 +69,6 @@ impl PaliIndex {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub fn add_text(&mut self, text: &PaliText) -> Result<()> {
-        let uid = self.index.schema().get_field("uid")?;
-        let contents = self.index.schema().get_field("contents")?;
-        let mut document = TantivyDocument::default();
-        document.add_text(uid, text.uid.as_ref());
-        for segment in text.segments.clone() {
-            document.add_text(contents, segment.text);
-        }
-
-        self.writer.add_document(document)?;
-        self.writer.commit()?;
-        Ok(())
-    }
-
-    #[allow(clippy::missing_errors_doc)]
     pub fn search(&self, query: &str) -> Result<Vec<String>> {
         let reader = self
             .index
@@ -114,5 +93,11 @@ impl PaliIndex {
             }
         }
         Ok(uids)
+    }
+}
+
+impl AsRef<Index> for PaliIndex {
+    fn as_ref(&self) -> &Index {
+        &self.index
     }
 }

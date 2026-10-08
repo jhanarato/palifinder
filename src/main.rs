@@ -32,6 +32,7 @@ use std::collections::BTreeSet;
 use std::fs::{create_dir_all, remove_dir_all};
 use std::path::{Path, PathBuf};
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
+use crate::writer::PaliIndexWriter;
 
 fn main() -> Result<()> {
     let args = Arguments::parse();
@@ -143,16 +144,18 @@ fn create_index(texts_path: PathBuf, index_path: PathBuf, stem_file_path: PathBu
         remove_dir_all(&index_path)?;
     }
     create_dir_all(&index_path)?;
+
     let config = match stemmer {
         Stemmer::Snowball => AnalyzerConfig::Algorithmic,
         Stemmer::Dictionary => AnalyzerConfig::Dictionary { stem_file: stem_file_path },
     };
-    let files = PaliFiles::new(texts_path);
-    let mut index = PaliIndex::create(Location::InDir { index_path }, config)?;
 
+    let files = PaliFiles::new(texts_path);
+    let index = PaliIndex::create(Location::InDir { index_path }, config)?;
+    let mut writer = PaliIndexWriter::new(index.as_ref())?;
     for text in files.texts() {
         match text {
-            Ok(text) => index.add_text(&text)?,
+            Ok(text) => writer.add_text(&text)?,
             Err(e) => println!("Error: {e:#?}"),
         }
     }
