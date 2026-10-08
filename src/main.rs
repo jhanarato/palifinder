@@ -13,6 +13,7 @@ pub mod tokenizer;
 pub mod vocabulary;
 pub mod index;
 mod writer;
+mod search;
 
 use crate::analyzers::AnalyzerConfig;
 use crate::commands::Stemmer;
