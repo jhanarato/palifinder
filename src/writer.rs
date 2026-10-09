@@ -13,7 +13,7 @@ pub struct PaliWriter {
 impl PaliWriter {
     pub fn new(index: &PaliIndex) -> Result<Self> {
         Ok(Self {
-            writer: index.writer()?,
+            writer: index.as_ref().writer(50_000_000)?,
             uid: index.uid_field()?,
             contents: index.contents_field()?,
         })

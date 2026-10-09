@@ -3,7 +3,7 @@ use anyhow::Result;
 use std::path::{Path, PathBuf};
 use tantivy::schema::{Field, IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::{Index, IndexWriter};
+use tantivy::Index;
 
 pub struct PaliIndex {
     index: Index,
@@ -63,11 +63,6 @@ impl PaliIndex {
 
         schema_builder.add_text_field("contents", contents_options);
         schema_builder.build()
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub fn writer(&self) -> Result<IndexWriter> {
-        Ok(self.index.writer(50_000_000)?)
     }
 
     #[allow(clippy::missing_errors_doc)]
