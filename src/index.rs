@@ -1,9 +1,9 @@
 use crate::analyzers::AnalyzerConfig;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
-use tantivy::schema::{IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
+use tantivy::schema::{Field, IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::Index;
+use tantivy::{Index, IndexWriter};
 
 pub struct PaliIndex {
     index: Index,
@@ -42,7 +42,6 @@ impl PaliIndex {
         Ok(Self { index })
     }
 
-    #[allow(unused)]
     fn schema() -> Schema {
         let mut schema_builder = Schema::builder();
 
@@ -64,6 +63,21 @@ impl PaliIndex {
 
         schema_builder.add_text_field("contents", contents_options);
         schema_builder.build()
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub fn writer(&self) -> Result<IndexWriter> {
+        Ok(self.index.writer(50_000_000)?)
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub fn uid_field(&self) -> Result<Field> {
+        Ok(self.index.schema().get_field("uid")?)
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub fn contents_field(&self) -> Result<Field> {
+        Ok(self.index.schema().get_field("contents")?)
     }
 }
 

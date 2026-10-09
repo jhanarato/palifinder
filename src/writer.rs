@@ -1,7 +1,8 @@
+use crate::index::PaliIndex;
 use crate::texts::{PaliFiles, PaliText};
 use anyhow::Result;
 use tantivy::schema::Field;
-use tantivy::{Index, IndexWriter, TantivyDocument};
+use tantivy::{IndexWriter, TantivyDocument};
 
 pub struct PaliWriter {
     writer: IndexWriter,
@@ -10,11 +11,11 @@ pub struct PaliWriter {
 }
 
 impl PaliWriter {
-    pub fn new(index: &Index) -> Result<Self> {
+    pub fn new(index: &PaliIndex) -> Result<Self> {
         Ok(Self {
-            writer: index.writer(50_000_000)?,
-            uid: index.schema().get_field("uid")?,
-            contents: index.schema().get_field("contents")?,
+            writer: index.writer()?,
+            uid: index.uid_field()?,
+            contents: index.contents_field()?,
         })
     }
 

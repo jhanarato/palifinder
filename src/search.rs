@@ -13,7 +13,6 @@ pub struct PaliSearcher {
 }
 
 impl PaliSearcher {
-    #[allow(unused)]
     pub fn new(index: &Index) -> Result<Self> {
         let reader = Self::reader(index)?;
         let uid = index.schema().get_field("uid")?;
@@ -37,7 +36,6 @@ impl PaliSearcher {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    #[allow(unused)]
     pub fn search(&self, query: &str) -> Result<Vec<String>> {
         let searcher = self.reader.searcher();
         let query = self.query_parser.parse_query(query)?;
