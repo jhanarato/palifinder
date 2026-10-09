@@ -1,5 +1,5 @@
 use crate::index::PaliIndex;
-use crate::texts::{PaliFiles, PaliText};
+use crate::texts::PaliText;
 use anyhow::Result;
 use tantivy::schema::Field;
 use tantivy::{IndexWriter, TantivyDocument};
@@ -19,8 +19,8 @@ impl PaliWriter {
         })
     }
 
-    pub fn index_files(&mut self, files: &PaliFiles) -> Result<()> {
-        for text in files.texts() {
+    pub fn add_texts(&mut self, texts: impl Iterator<Item = Result<PaliText>>) -> Result<()> {
+        for text in texts {
             match text {
                 Ok(text) => self.add_text(&text)?,
                 Err(e) => println!("Error: {e:#?}"),
