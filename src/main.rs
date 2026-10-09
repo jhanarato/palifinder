@@ -166,7 +166,7 @@ fn search_index(index_path: &Path, stem_file_path: PathBuf, stemmer: Stemmer, qu
     };
     let index = PaliIndex::open(index_path, config)?;
     let query = join(query, " ");
-    let searcher = PaliSearcher::new(index.as_ref())?;
+    let searcher = PaliSearcher::new(&index)?;
     let results = searcher.search(query.as_str())?;
     for result in results {
         println!("{result}");

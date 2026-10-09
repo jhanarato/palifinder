@@ -3,6 +3,7 @@ use tantivy::schema::{Field, Value};
 use tantivy::{Index, IndexReader, ReloadPolicy, TantivyDocument};
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
+use crate::index::PaliIndex;
 
 #[allow(unused)]
 pub struct PaliSearcher {
@@ -13,11 +14,11 @@ pub struct PaliSearcher {
 }
 
 impl PaliSearcher {
-    pub fn new(index: &Index) -> Result<Self> {
-        let reader = Self::reader(index)?;
-        let uid = index.schema().get_field("uid")?;
-        let contents = index.schema().get_field("contents")?;
-        let query_parser = QueryParser::for_index(index, vec![contents]);
+    pub fn new(index: &PaliIndex) -> Result<Self> {
+        let reader = Self::reader(index.as_ref())?;
+        let uid = index.uid_field()?;
+        let contents = index.contents_field()?;
+        let query_parser = QueryParser::for_index(index.as_ref(), vec![contents]);
 
         Ok(Self {
             reader,
