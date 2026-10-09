@@ -1,4 +1,4 @@
-use crate::texts::PaliText;
+use crate::texts::{PaliFiles, PaliText};
 use anyhow::Result;
 use tantivy::schema::Field;
 use tantivy::{Index, IndexWriter, TantivyDocument};
@@ -18,8 +18,17 @@ impl PaliWriter {
         })
     }
 
-    #[allow(clippy::missing_errors_doc)]
-    pub fn add_text(&mut self, text: &PaliText) -> Result<()> {
+    pub fn index_files(&mut self, files: &PaliFiles) -> Result<()> {
+        for text in files.texts() {
+            match text {
+                Ok(text) => self.add_text(&text)?,
+                Err(e) => println!("Error: {e:#?}"),
+            }
+        }
+        Ok(())
+    }
+
+    fn add_text(&mut self, text: &PaliText) -> Result<()> {
         let mut document = TantivyDocument::default();
         document.add_text(self.uid, &text.uid);
         for segment in text.segments.clone() {

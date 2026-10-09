@@ -155,12 +155,7 @@ fn create_index(texts_path: PathBuf, index_path: PathBuf, stem_file_path: PathBu
     let files = PaliFiles::new(texts_path);
     let index = PaliIndex::create(Location::InDir { index_path }, config)?;
     let mut writer = PaliWriter::new(index.as_ref())?;
-    for text in files.texts() {
-        match text {
-            Ok(text) => writer.add_text(&text)?,
-            Err(e) => println!("Error: {e:#?}"),
-        }
-    }
+    writer.index_files(&files)?;
     Ok(())
 }
 
