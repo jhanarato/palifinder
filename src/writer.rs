@@ -21,13 +21,9 @@ impl PaliWriter {
 
     pub fn add_texts(&mut self, texts: impl Iterator<Item = Result<PaliText>>) -> Result<()> {
         for text in texts {
-            match text {
-                Ok(text) => {
-                    let doc = self.create_document(&text);
-                    self.writer.add_document(doc)?;
-                }
-                Err(e) => println!("Error: {e:#?}"),
-            }
+            let text = text?;
+            let doc = self.create_document(&text);
+            self.writer.add_document(doc)?;
         }
         self.writer.commit()?;
         Ok(())
