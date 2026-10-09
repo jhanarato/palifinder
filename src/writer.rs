@@ -29,14 +29,18 @@ impl PaliWriter {
     }
 
     fn add_text(&mut self, text: &PaliText) -> Result<()> {
+        let doc = self.create_document(text);
+        self.writer.add_document(doc)?;
+        self.writer.commit()?;
+        Ok(())
+    }
+
+    fn create_document(&mut self, text: & PaliText) -> TantivyDocument {
         let mut document = TantivyDocument::default();
         document.add_text(self.uid, &text.uid);
         for segment in text.segments.clone() {
             document.add_text(self.contents, segment.text);
         }
-
-        self.writer.add_document(document)?;
-        self.writer.commit()?;
-        Ok(())
+        document
     }
 }
