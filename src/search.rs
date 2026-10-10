@@ -1,9 +1,9 @@
+use crate::index::PaliIndex;
 use anyhow::Result;
-use tantivy::schema::{Field, Value};
-use tantivy::{Index, IndexReader, ReloadPolicy, TantivyDocument};
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
-use crate::index::PaliIndex;
+use tantivy::schema::{Field, Value};
+use tantivy::{Index, IndexReader, ReloadPolicy, TantivyDocument};
 
 #[allow(unused)]
 pub struct PaliSearcher {
@@ -15,20 +15,16 @@ pub struct PaliSearcher {
 
 impl PaliSearcher {
     pub fn new(index: &PaliIndex) -> Result<Self> {
-        let reader = Self::reader(index.as_ref())?;
-        let uid = index.uid_field()?;
         let contents = index.contents_field()?;
-        let query_parser = QueryParser::for_index(index.as_ref(), vec![contents]);
-
         Ok(Self {
-            reader,
-            query_parser,
-            uid,
-            contents,
+            reader: Self::reader(index.as_ref())?,
+            query_parser: QueryParser::for_index(index.as_ref(), vec![contents]),
+            uid: index.uid_field()?,
+            contents: index.contents_field()?,
         })
     }
 
-    fn reader(index: &Index) ->  Result<IndexReader>{
+    fn reader(index: &Index) -> Result<IndexReader> {
         let reader = index
             .reader_builder()
             .reload_policy(ReloadPolicy::OnCommitWithDelay)
