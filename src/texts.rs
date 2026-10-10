@@ -1,5 +1,6 @@
 use anyhow::{Context, Error, Result};
 use std::collections::BTreeMap;
+use std::fmt::{Display, Formatter};
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
@@ -83,6 +84,12 @@ impl TryFrom<&str> for TextUid {
 impl AsRef<str> for TextUid {
     fn as_ref(&self) -> &str {
         &self.0
+    }
+}
+
+impl Display for TextUid {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

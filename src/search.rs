@@ -4,6 +4,7 @@ use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{Field, Value};
 use tantivy::{Index, IndexReader, ReloadPolicy, TantivyDocument};
+use crate::texts::TextUid;
 
 #[allow(unused)]
 pub struct PaliSearcher {
@@ -33,7 +34,7 @@ impl PaliSearcher {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub fn search(&self, query: &str) -> Result<Vec<String>> {
+    pub fn search(&self, query: &str) -> Result<Vec<TextUid>> {
         let searcher = self.reader.searcher();
         let query = self.query_parser.parse_query(query)?;
         let top_docs = searcher.search(&query, &TopDocs::with_limit(10).order_by_score())?;
@@ -44,7 +45,8 @@ impl PaliSearcher {
             if let Some(uid) = retrieved_doc.get_first(self.uid)
                 && let Some(uid) = uid.as_str()
             {
-                uids.push(String::from(uid));
+                let uid = TextUid::try_from(uid)?;
+                uids.push(uid);
             }
         }
         Ok(uids)
