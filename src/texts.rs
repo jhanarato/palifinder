@@ -55,15 +55,24 @@ pub struct TextUid(String);
 
 impl TryFrom<&Path> for TextUid {
     type Error = Error;
+
     fn try_from(path: &Path) -> Result<TextUid, Error> {
-        let stem_str = path
+        let stem = path
             .file_stem()
             .context("Bad file stem")?
             .to_str()
             .context("Bad string")?
             .to_string();
 
-        let uid = stem_str
+        TextUid::try_from(stem.as_str())
+    }
+}
+
+impl TryFrom<&str> for TextUid {
+    type Error = Error;
+
+    fn try_from(value: &str) -> Result<TextUid, Error> {
+        let uid = value
             .split('_')
             .next()
             .context("Failed to extract text UID from filename.")?;
