@@ -32,6 +32,8 @@ use rusqlite::Connection;
 use std::collections::BTreeSet;
 use std::fs::{create_dir_all, remove_dir_all};
 use std::path::{Path, PathBuf};
+use tabled::settings::Style;
+use tabled::Table;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream};
 use crate::search::PaliSearcher;
 use crate::writer::PaliWriter;
@@ -168,8 +170,8 @@ fn search_index(index_path: &Path, stem_file_path: PathBuf, stemmer: Stemmer, qu
     let query = join(query, " ");
     let searcher = PaliSearcher::new(&index)?;
     let results = searcher.search(query.as_str())?;
-    for result in results {
-        println!("{result}");
-    }
+    let mut table = Table::new(results);
+    table.with(Style::modern());
+    println!("{table}");
     Ok(())
 }
