@@ -49,6 +49,7 @@ impl PaliSearcher {
                 let result = SearchResult {
                     uid : TextUid::try_from(uid)?,
                     score,
+                    snippet: String::from("snippet text to go here"),
                 };
 
                 results.push(result);
@@ -64,4 +65,6 @@ pub struct SearchResult {
     pub uid: TextUid,
     #[tabled(rename = "Relevance Score")]
     pub score: Score,
+    #[tabled(rename = "Keywords in Context")]
+    pub snippet: String,
 }
