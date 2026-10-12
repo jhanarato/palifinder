@@ -1,6 +1,5 @@
 use crate::index::PaliIndex;
 use crate::texts::TextUid;
-use ansi_term::Style;
 use anyhow::Result;
 use tabled::Tabled;
 use tantivy::collector::TopDocs;
@@ -48,7 +47,7 @@ impl PaliSearcher {
             if let Some(uid) = retrieved_doc.get_first(self.uid)
                 && let Some(uid) = uid.as_str()
             {
-                let snippet = self.snippet(&*query);
+                let snippet = self.snippet(&*query, &retrieved_doc)?;
                 let result = SearchResult {
                     uid: TextUid::try_from(uid)?,
                     score,
@@ -61,9 +60,12 @@ impl PaliSearcher {
         Ok(results)
     }
 
-    fn snippet(&self, query: &dyn Query) -> String {
-        let _generator = SnippetGenerator::create(&self.reader.searcher(), query, self.contents);
-        format!("Snippet text with {} highlighting", Style::new().italic().paint("italic"))
+    fn snippet(&self, query: &dyn Query, document: &TantivyDocument) -> Result<String> {
+        let generator = SnippetGenerator::create(&self.reader.searcher(), query, self.contents)?;
+        let snippet = generator.snippet_from_doc(document);
+        println!("{snippet:#?}");
+        Ok(snippet.to_html())
+        // format!("Snippet text with {} highlighting", Style::new().italic().paint("italic"))
     }
 }
 

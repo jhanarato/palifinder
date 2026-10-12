@@ -1,9 +1,9 @@
 use crate::analyzers::AnalyzerConfig;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
+use tantivy::Index;
 use tantivy::schema::{Field, IndexRecordOption, Schema, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer::TextAnalyzer;
-use tantivy::Index;
 
 pub struct PaliIndex {
     index: Index,
@@ -55,11 +55,13 @@ impl PaliIndex {
 
         schema_builder.add_text_field("uid", uid_options);
 
-        let contents_options = TextOptions::default().set_indexing_options(
-            TextFieldIndexing::default()
-                .set_tokenizer(Self::PLI_STEM)
-                .set_index_option(IndexRecordOption::WithFreqsAndPositions),
-        );
+        let contents_options = TextOptions::default()
+            .set_indexing_options(
+                TextFieldIndexing::default()
+                    .set_tokenizer(Self::PLI_STEM)
+                    .set_index_option(IndexRecordOption::WithFreqsAndPositions),
+            )
+            .set_stored();
 
         schema_builder.add_text_field("contents", contents_options);
         schema_builder.build()
