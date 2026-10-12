@@ -1,11 +1,12 @@
 use crate::index::PaliIndex;
 use crate::texts::TextUid;
+use ansi_term::Colour;
 use anyhow::Result;
 use tabled::Tabled;
 use tantivy::collector::TopDocs;
 use tantivy::query::{Query, QueryParser};
 use tantivy::schema::{Field, Value};
-use tantivy::snippet::SnippetGenerator;
+use tantivy::snippet::{Snippet, SnippetGenerator};
 use tantivy::{Index, IndexReader, ReloadPolicy, Score, TantivyDocument};
 
 #[allow(unused)]
@@ -63,9 +64,24 @@ impl PaliSearcher {
     fn snippet(&self, query: &dyn Query, document: &TantivyDocument) -> Result<String> {
         let generator = SnippetGenerator::create(&self.reader.searcher(), query, self.contents)?;
         let snippet = generator.snippet_from_doc(document);
-        println!("{snippet:#?}");
-        Ok(snippet.to_html())
-        // format!("Snippet text with {} highlighting", Style::new().italic().paint("italic"))
+        let highlighted = Self::highlight(&snippet);
+        Ok(highlighted)
+    }
+
+    fn highlight(snippet: &Snippet) -> String {
+        let mut result = String::new();
+        let mut start_from = 0;
+
+        for fragment_range in snippet.highlighted() {
+            result.push_str(&snippet.fragment()[start_from..fragment_range.start]);
+            let fragment = &snippet.fragment()[fragment_range.clone()];
+            let red_fragment = Colour::Green.paint(fragment).to_string();
+            result.push_str(&red_fragment);
+            start_from = fragment_range.end;
+        }
+
+        result.push_str(&snippet.fragment()[start_from..]);
+        result
     }
 }
 
