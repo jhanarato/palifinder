@@ -1,3 +1,4 @@
+use ansi_term::Style;
 use crate::index::PaliIndex;
 use crate::texts::TextUid;
 use anyhow::Result;
@@ -46,10 +47,11 @@ impl PaliSearcher {
             if let Some(uid) = retrieved_doc.get_first(self.uid)
                 && let Some(uid) = uid.as_str()
             {
+                let snippet = format!("Snippet text with {} highlighting", Style::new().italic().paint("italic"));
                 let result = SearchResult {
-                    uid : TextUid::try_from(uid)?,
+                    uid: TextUid::try_from(uid)?,
                     score,
-                    snippet: String::from("snippet text to go here"),
+                    snippet,
                 };
 
                 results.push(result);
