@@ -1,11 +1,12 @@
-use ansi_term::Style;
 use crate::index::PaliIndex;
 use crate::texts::TextUid;
+use ansi_term::Style;
 use anyhow::Result;
 use tabled::Tabled;
 use tantivy::collector::TopDocs;
-use tantivy::query::QueryParser;
+use tantivy::query::{Query, QueryParser};
 use tantivy::schema::{Field, Value};
+use tantivy::snippet::SnippetGenerator;
 use tantivy::{Index, IndexReader, ReloadPolicy, Score, TantivyDocument};
 
 #[allow(unused)]
@@ -47,7 +48,7 @@ impl PaliSearcher {
             if let Some(uid) = retrieved_doc.get_first(self.uid)
                 && let Some(uid) = uid.as_str()
             {
-                let snippet = format!("Snippet text with {} highlighting", Style::new().italic().paint("italic"));
+                let snippet = self.snippet(&*query);
                 let result = SearchResult {
                     uid: TextUid::try_from(uid)?,
                     score,
@@ -58,6 +59,11 @@ impl PaliSearcher {
             }
         }
         Ok(results)
+    }
+
+    fn snippet(&self, query: &dyn Query) -> String {
+        let _generator = SnippetGenerator::create(&self.reader.searcher(), query, self.contents);
+        format!("Snippet text with {} highlighting", Style::new().italic().paint("italic"))
     }
 }
 
