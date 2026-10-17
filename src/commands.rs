@@ -45,23 +45,18 @@ pub struct Arguments {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
-    /// Display tokens produced by text analyzer.
+    /// Display tokens produced by text analyzer
     Analyze {
         #[arg(help = "The text to be analyzed")]
         text: String,
     },
-    /// Show headword keys for term lookup.
-    DpdLookup {
-        #[arg(help = "Term to look for")]
-        term: String,
-    },
-    /// Save the lemmas and stems for all texts.
+    /// Create a CSV file containing dictionary and Snowball stems
     StemTable,
     /// Show charcters recognised as Pali
     PaliChars,
     /// Display all non-Pali characters
     OtherChars,
-    /// Display most frequent words
+    /// Display most frequent terms
     StopWords {
         #[arg(
             short = 'n',

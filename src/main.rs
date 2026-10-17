@@ -47,9 +47,6 @@ fn main() -> Result<()> {
         Command::Analyze { text } => {
             analyze_text(args.stemmer, text.as_str(), &args.stem_file)?;
         }
-        Command::DpdLookup { term } => {
-            lookup_term_in_dictionary(term.as_str(), args.dpd_db.as_path())?;
-        }
         Command::PaliChars => {
             show_pali_characters();
         }
@@ -96,18 +93,6 @@ fn analyze_text(stemmer: Stemmer, text: &str, stem_file_path: &Path) -> Result<(
     let mut analyzer = TextAnalyzer::try_from(config)?;
     let mut token_stream = analyzer.token_stream(text);
     token_stream.process(&mut |token: &Token| print!("{0} ", token.text));
-    Ok(())
-}
-
-fn lookup_term_in_dictionary(term: &str, dictionary_path: &Path) -> Result<()> {
-    let conn = Connection::open(dictionary_path)?;
-    let dict = Dictionary::from(conn);
-    let ids = dict.lookup(term);
-    match ids {
-        Err(e) => println!("An error occured: {e:#?}"),
-        Ok(ids) if ids.is_empty() => println!("Nothing found"),
-        Ok(ids) => ids.iter().for_each(|id| println!("{id}")),
-    }
     Ok(())
 }
 

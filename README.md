@@ -68,8 +68,7 @@ Usage: pali [OPTIONS] <COMMAND>
 
 Commands:
   analyze      Display tokens produced by text analyzer
-  dpd-lookup   Show headword keys for term lookup
-  stem-table   Save the lemmas and stems for all texts
+  stem-table   Create a CSV file containing dictionary and Snowball stems
   pali-chars   Show charcters recognised as Pali
   other-chars  Display all non-Pali characters
   stop-words   Display most frequent words
