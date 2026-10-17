@@ -28,7 +28,7 @@ use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
 use itertools::join;
-use rusqlite::Connection;
+use rusqlite::{Connection, OpenFlags};
 use std::collections::BTreeSet;
 use std::fs::{create_dir_all, remove_dir_all};
 use std::path::{Path, PathBuf};
@@ -76,7 +76,7 @@ fn create_stem_table(
         .filter(LowerCaser)
         .build();
     let vocabulary = Vocabulary::new(files.segments(), analyzer);
-    let conn = Connection::open(dictionary_path)?;
+    let conn = Connection::open_with_flags(dictionary_path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
     let dictionary = Dictionary::from(conn);
     let term_stems = StemTable::new(vocabulary, &dictionary);
     term_stems.save(stem_file_path)?;
