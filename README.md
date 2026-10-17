@@ -11,7 +11,6 @@ For the most part Pālifinder should be considered a prototype, though it is cer
 - A tokenizer that recognizes Pāli, as encoded in SuttaCentral's segmented Pāli texts.
 - Two stemmers: one using dictionary lookup and the other compiled from Snowball to pure Rust.
 - A stopword filter.
-- Word lookup for the Digital Pali Dictionary.
 - Indexing of SuttaCentral's segmented Pāli texts.
 - Search queries with keywords-in-context display.  
 
@@ -25,11 +24,11 @@ As a prototype, it has limitations:
 
 ## Why two stemmers?
 
-We have two competing stemmers. Our algorithmic stemmer was written in Snowball by Ven. Khemarato and compiled to Rust. The algorithm is still a work in progress. The Pālifinder lets us test the algorithm and get it ready for production work. With Snowball's portability it can be easily integrated into any number of search backends.  [ElasticSearch for instance](https://www.elastic.co/docs/reference/text-analysis/analysis-snowball-tokenfilter).
+We have two competing stemmers. Our algorithmic stemmer was written in Snowball by Ven. Khemarato and compiled to Rust. The algorithm is still a work in progress. Pālifinder allows us to test the algorithm and make it production ready.
 
-The dictionary stemmer stems (pun intended) from a conversation with the [Digital Pāli Dictionary](https://dpdict.net/) proponents. Given that the hard work has already been done to match a stem to every word in the dictionary, we should be able to extract the stems for each word, store it as a map in memory and use the map as a lookup table for the stemmer. In practice, the DPD database is unnormalized. I was only able to extract a stem for about half the terms in SuttaCentral's Pāli. I'm sure this can be improved upon by those more familiar with Pāli and data extraction generally. 
+The dictionary stemmer stems (pun intended) from a conversation with the [Digital Pāli Dictionary](https://dpdict.net/) folk. Given that the hard work has already been done to match a stem to every word in the dictionary, we should be able to extract the stems for each word, store it as a map in memory and use the map as a lookup table for the stemmer. In practice, the DPD database is unnormalized and I don't know Pāli. I was only able to extract a stem for about half the terms. 
 
-The other issue I wanted to address was how much memory the map would use. As it turns out we're looking at about 5MB of data on disk, so a trivial amount of space given today's resources. The speed of the lookup is pretty similar, though the Snowball implementation may become slower as it gets more complex.
+The other issue I wanted to address was how much memory the map would use. As it turns out we're looking at about 5MB of data on disk, so a trivial amount of memory. The speed of the lookup is pretty similar, though the Snowball implementation may become slower as it gets more complex.
 
 Really there's no reason not to persue both.
 
@@ -42,7 +41,7 @@ As this is a prototype, there are no releases. To build and install:
 
 ### Dictionary stemmer
 
-By default, Pālifinder uses the included Snowball stemmer. If you want to use or test the dictionary stemmer, you'll need the SQLite database of the Digital Pāli Dictionary. 
+By default, Pālifinder uses the included Snowball stemmer. If you want to use or test the dictionary stemmer, you'll need the SQLite database of the Digital Pāli Dictionary to compile a stem table. 
 
 It can be downloaded here:
 
@@ -102,7 +101,7 @@ pali --stemmer dictionary index
 
 ## Querying the index
 
-Either stemmer can be used, but it's advisable to use the same stemmer that you indexed with. Any difference in the generated stems gives unexpected results.
+Either stemmer can be used, but it's advisable to use the same stemmer that you indexed with. Any differences between the two can give unexpected results.
 
 Snowball:
 
@@ -158,19 +157,19 @@ Clippy is set to "pedantic", so there might be a few more changes required if yo
 
 ### The stem table
 
-When the `pali stem-table` command is run, it creates a vocabulary with all unique terms. Unlike other search engines tokenizer is aware of the Pāli alphabet. The `dpd.db` SQLite database is queried to obtain the stem for each term that is found. The Snowball stem is also computed and the result is a table in CSV format:
+When the `pali stem-table` command is run, it creates a vocabulary with all unique terms, tokenizing on the Pāli alphabet. The `dpd.db` SQLite database is queried to obtain the stem for each term that is found. The Snowball stem is also computed and the result is a table in CSV format:
 
 | term     | dpd_stem | snowball_stem |
 | -------- | -------- | ------------- |
 | niviṭṭho | niviṭṭh  | niviṭṭh       |
 
-The `dpd_stem` column contains empty cells where there is no stem found in the database. Where values are missing, the dictionary stemmer uses the original term as the stem. 
+The `dpd_stem` column contains empty cells when no stem found. In this case the dictionary stemmer will emit the term unchanged. 
 
 `snowball_stem` always contains a stem.
 
 ### Testing the analyzers
 
-You can check how the text analyzers handle arbitrary text:
+You can analyze arbitrary text without indexing:
 
 ```cli
 ❯ pali analyze "Pajāpatiṁ pajāpatito sañjānāti; "
@@ -178,5 +177,3 @@ pajāpat pajāpatit sañjān
 ❯ pali --stemmer dictionary analyze "Pajāpatiṁ pajāpatito sañjānāti; "
 pajāpatiṁ pajāpat sañjān 
 ```
-
-This will work without the index being present.
