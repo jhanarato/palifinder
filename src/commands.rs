@@ -45,18 +45,25 @@ pub struct Arguments {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
-    /// Display tokens produced by text analyzer
+    /// Create the index
+    Index,
+    /// Search the index
+    Find {
+        #[arg(trailing_var_arg = true)]
+        query: Vec<String>,
+    },
+    /// Display the tokens emitted by the text analyzer
     Analyze {
-        #[arg(help = "The text to be analyzed")]
+        #[arg(help = "The text in quotes")]
         text: String,
     },
-    /// Create a CSV file containing dictionary and Snowball stems
+    /// Create the CSV stem file
     StemTable,
-    /// Show charcters recognised as Pali
+    /// Display Pali characters expected by the tokenizer
     PaliChars,
-    /// Display all non-Pali characters
+    /// Display all characters excluded by the tokenizer
     OtherChars,
-    /// Display most frequent terms
+    /// List terms by frequency, descending
     StopWords {
         #[arg(
             short = 'n',
@@ -65,13 +72,6 @@ pub enum Command {
             help = "How many of the most frequent words to display"
         )]
         number: usize,
-    },
-    /// Create or recreate an index.
-    Index,
-    /// Search the index with a query
-    Find {
-        #[arg(trailing_var_arg = true)]
-        query: Vec<String>,
     },
 }
 

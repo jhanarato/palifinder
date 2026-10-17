@@ -67,13 +67,13 @@ All actions can be performed via a single command:
 Usage: pali [OPTIONS] <COMMAND>
 
 Commands:
-  analyze      Display tokens produced by text analyzer
-  stem-table   Create a CSV file containing dictionary and Snowball stems
-  pali-chars   Show charcters recognised as Pali
-  other-chars  Display all non-Pali characters
-  stop-words   Display most frequent words
-  index        Create or recreate an index
-  find         Search the index with a query
+  index        Create the index
+  find         Search the index
+  analyze      Display the tokens emitted by the text analyzer
+  stem-table   Create the CSV stem file
+  pali-chars   Display Pali characters expected by the tokenizer
+  other-chars  Display all characters excluded by the tokenizer
+  stop-words   List terms by frequency, descending
   help         Print this message or the help of the given subcommand(s)
 
 Options:
