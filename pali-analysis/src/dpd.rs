@@ -148,6 +148,20 @@ impl Dictionary {
         Ok(lemmas)
     }
 
+    /// Every inflected form DPD knows a headword for, so that a searcher can type a
+    /// form the texts happen not to use: gamessati is gameti's future, not gamissati's.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn inflections(&self) -> Result<Vec<String>> {
+        let mut statement =
+            self.connection.prepare("SELECT lookup_key FROM lookup WHERE headwords != '' AND headwords != '[]'")?;
+        let rows = statement.query_map([], |row| row.get::<_, String>(0))?;
+        let mut forms = Vec::new();
+        for row in rows {
+            forms.push(fold_niggahita(&row?));
+        }
+        Ok(forms)
+    }
+
     /// The distinct words a term can be, in DPD's order. A term the tokenizer split
     /// from a following quotation mark (dukkhan”ti, bhavissatī”ti) has the spelling
     /// sandhi gave it, so a term with no reading tries its pre-sandhi spelling.

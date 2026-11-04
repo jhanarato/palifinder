@@ -1,10 +1,11 @@
 use crate::dpd::Dictionary;
 use crate::snowball;
+use crate::tokenizer::PaliTokenizer;
 use crate::vocabulary::Vocabulary;
 use anyhow::{Context, Error, Result, bail};
 use csv::{Reader, Writer};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions, remove_file, rename};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
@@ -34,6 +35,17 @@ impl StemTable {
     pub fn new(vocabulary: Vocabulary, dictionary: &Dictionary) -> Result<Self> {
         let mut terms: HashMap<String, u64> = dictionary.lemmas()?.into_iter().map(|t| (t, 0)).collect();
         terms.extend(vocabulary);
+        // Inflections the texts do not use, so that a searcher who types one finds its word:
+        // gamessati is gameti's. They count for nothing in the word estimates and take no
+        // part in the fallbacks, so they change no row the texts and headwords give.
+        let alphabet = PaliTokenizer::default().alphabet;
+        let mut unseen = HashSet::new();
+        for form in dictionary.inflections()? {
+            if form.chars().all(|c| alphabet.contains(&c)) && !terms.contains_key(&form) {
+                terms.insert(form.clone(), 0);
+                unseen.insert(form);
+            }
+        }
         let mut terms: Vec<(String, u64)> = terms.into_iter().collect();
         terms.sort_unstable();
         let mut entries = dictionary.entries(&terms).context("resolving terms against DPD")?;
@@ -44,7 +56,9 @@ impl StemTable {
         for (term, count) in terms {
             let entry = entries.remove(&term).unwrap_or_default();
             let snowball_stem = snowball::pali_stem(&term);
-            if let Some(word) = &entry.word {
+            if unseen.contains(&term) {
+                // Only its own fallback is decided, below.
+            } else if let Some(word) = &entry.word {
                 *tallies
                     .entry(snowball_stem.clone())
                     .or_default()
