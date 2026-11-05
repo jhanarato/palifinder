@@ -1,10 +1,10 @@
-use std::collections::HashSet;
-use std::collections::hash_set::IntoIter;
+use std::collections::HashMap;
+use std::collections::hash_map::IntoIter;
 use tantivy::tokenizer::{TextAnalyzer, TokenStream};
 
 pub struct Vocabulary {
     analyzer: TextAnalyzer,
-    tokens: HashSet<String>,
+    tokens: HashMap<String, u64>,
 }
 
 impl Vocabulary {
@@ -12,7 +12,7 @@ impl Vocabulary {
     pub fn new<T: AsRef<str>>(texts: impl IntoIterator<Item = T>, analyzer: TextAnalyzer) -> Self {
         let mut vocabulary = Self {
             analyzer,
-            tokens: HashSet::new(),
+            tokens: HashMap::new(),
         };
         for text in texts {
             vocabulary.add_text(text.as_ref());
@@ -28,14 +28,14 @@ impl Vocabulary {
     pub fn add_text(&mut self, text: &str) {
         let mut stream = self.analyzer.token_stream(text);
         stream.process(&mut |token| {
-            self.tokens.insert(token.text.clone());
+            *self.tokens.entry(token.text.clone()).or_default() += 1;
         });
     }
 }
 
 impl IntoIterator for Vocabulary {
-    type Item = String;
-    type IntoIter = IntoIter<String>;
+    type Item = (String, u64);
+    type IntoIter = IntoIter<String, u64>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.tokens.into_iter()
@@ -55,6 +55,7 @@ mod tests {
 
         let mut vocabulary: Vec<String> = Vocabulary::new(texts, analyzer)
             .into_iter()
+            .map(|(term, _)| term)
             .collect();
         vocabulary.sort();
 
