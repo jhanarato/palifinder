@@ -1,4 +1,3 @@
-use crate::texts::Segment;
 use std::collections::HashSet;
 use std::collections::hash_set::IntoIter;
 use tantivy::tokenizer::{TextAnalyzer, TokenStream};
@@ -10,15 +9,20 @@ pub struct Vocabulary {
 
 impl Vocabulary {
     #[must_use]
-    pub fn new(segments: impl Iterator<Item = Segment>, analyzer: TextAnalyzer) -> Self {
+    pub fn new<T: AsRef<str>>(texts: impl IntoIterator<Item = T>, analyzer: TextAnalyzer) -> Self {
         let mut vocabulary = Self {
             analyzer,
             tokens: HashSet::new(),
         };
-        for segment in segments {
-            vocabulary.add_text(segment.text.as_str());
+        for text in texts {
+            vocabulary.add_text(text.as_ref());
         }
         vocabulary
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.tokens.is_empty()
     }
 
     pub fn add_text(&mut self, text: &str) {
@@ -44,21 +48,12 @@ mod tests {
     use tantivy::tokenizer::WhitespaceTokenizer;
 
     #[test]
-    fn test_construct_from_segments() {
-        let segments = vec![
-            Segment {
-                uid: String::from("a"),
-                text: String::from("the cat sat"),
-            },
-            Segment {
-                uid: String::from("b"),
-                text: String::from("on the mat"),
-            },
-        ];
+    fn test_construct_from_texts() {
+        let texts = ["the cat sat", "on the mat"];
 
         let analyzer = TextAnalyzer::builder(WhitespaceTokenizer::default()).build();
 
-        let mut vocabulary: Vec<String> = Vocabulary::new(segments.into_iter(), analyzer)
+        let mut vocabulary: Vec<String> = Vocabulary::new(texts, analyzer)
             .into_iter()
             .collect();
         vocabulary.sort();

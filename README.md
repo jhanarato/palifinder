@@ -19,12 +19,11 @@ As a prototype, it has limitations:
 - The Pāli language only, not the translated texts.
 - Command line only. No REST API.
 - The dictionary stemmer has stems for about half the vocabulary. This could be improved with better database queries.
-- The Snowball stemmer stems the entire vocabulary but the algorithm is incomplete.
 - Default Tantivy query parser. [There's a lot more in the Tantivy toolchest](https://docs.rs/tantivy/latest/tantivy/query/index.html).
 
 ## Why two stemmers?
 
-We have two competing stemmers. Our algorithmic stemmer was written in Snowball by Ven. Khemarato and compiled to Rust. The algorithm is still a work in progress. Pālifinder allows us to test the algorithm and make it production ready.
+We have two competing stemmers. Our algorithmic stemmer began as Ven. Khemarato's Snowball program and is compiled to Rust. Its source is `pali-analysis/src/snowball/pali.sbl`. Pālifinder allows us to test the algorithm and make it production ready.
 
 The dictionary stemmer stems (pun intended) from a conversation with the [Digital Pāli Dictionary](https://dpdict.net/) folk. Given that the hard work has already been done to match a stem to every word in the dictionary, we should be able to extract the stems for each word, store it as a map in memory and use the map as a lookup table for the stemmer. In practice, the DPD database is unnormalized and I don't know Pāli. I was only able to extract a stem for about half the terms. 
 
@@ -70,6 +69,7 @@ Commands:
   find         Search the index
   analyze      Display the tokens emitted by the text analyzer
   stem-table   Create the CSV stem file
+  stem-words   Print each line of standard input followed by a tab and its analyzed tokens
   pali-chars   Display Pali characters expected by the tokenizer
   other-chars  Display all characters excluded by the tokenizer
   stop-words   List terms by frequency, descending
@@ -79,7 +79,7 @@ Options:
       --dpd-db <DPD_DB>         Digital pali dictionary SQLite database file [default: data/dpd.db]
       --texts <TEXTS>           Directory containing Pali root texts [default: /opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms]
       --stem-file <STEM_FILE>   Location of file containing stems [default: data/stems.csv]
-  -s, --stemmer <STEMMER>       Stemmer variant for text analyzer [default: snowball] [possible values: snowball, dictionary]
+  -s, --stemmer <STEMMER>       Stemmer variant for text analyzer [possible values: snowball, dictionary]
       --index-dir <INDEX_PATH>  Location of index [default: index]
   -h, --help                    Print help (see more with '--help')
 ```
@@ -101,18 +101,10 @@ pali --stemmer dictionary index
 
 ## Querying the index
 
-Either stemmer can be used, but it's advisable to use the same stemmer that you indexed with. Any differences between the two can give unexpected results.
-
-Snowball:
+The index records its stemmer, and `pali find` uses it. It refuses a different stemmer, and refuses to search if the rules or stem table have changed since indexing, because queries stemmed differently from the index quietly find too little. Run `pali index` again after upgrading.
 
 ```cli
 pali find Evaṁ me sutaṁ
-```
-
-Dictionary:
-
-```cli
-pali --stemmer dictionary find Evaṁ me sutaṁ
 ```
 
 ## Development
@@ -125,17 +117,13 @@ https://github.com/snowballstem/snowball
 
 Compiling the compiler was a single `make` command on my machine. YMMV.
 
-Download the Snowball file:
-
-https://github.com/khemarato/snowball/blob/pali/algorithms/pali.sbl
-
-Compile to Rust:
+Compile the source to Rust:
 
 ```cli
-./snowball -rust pali.sbl
+./snowball pali-analysis/src/snowball/pali.sbl -rust -o pali
 ```
 
-This generates a `pali.rs` file. Copy it to the `src/snowball` directory.
+This generates a `pali.rs` file. Copy it to the `pali-analysis/src/snowball` directory.
 
 The following edits are necessary:
 
@@ -153,7 +141,7 @@ use crate::snowball::snowball_env::SnowballEnv;
 use crate::snowball::among::Among;
 ```
 
-Clippy is set to "pedantic", so there might be a few more changes required if you want to issue a pull request.
+`pali-analysis/src/snowball/snowball_env.rs` comes from the same Snowball release as the compiler, currently 3.2.0. Copy it across when you update the compiler, with its `use snowball::Among;` changed as above: generated code does not build against an older runtime.
 
 ### The stem table
 
