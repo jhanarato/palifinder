@@ -788,6 +788,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "pali-analysis"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "csv",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tantivy",
+]
+
+[[package]]
 name = "palifinder"
 version = "0.1.0"
 dependencies = [
@@ -795,10 +807,8 @@ dependencies = [
  "anyhow",
  "clap",
  "counter",
- "csv",
  "itertools 0.15.0",
- "rusqlite",
- "serde",
+ "pali-analysis",
  "serde_json",
  "tabled",
  "tantivy",
