@@ -5,6 +5,10 @@ mod among;
 #[allow(clippy::complexity)]
 #[allow(clippy::suspicious)]
 mod snowball_env;
+#[allow(clippy::pedantic)]
+#[allow(clippy::style)]
+#[allow(clippy::complexity)]
+#[allow(clippy::correctness)]
 mod pali;
 
 #[must_use]

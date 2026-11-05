@@ -1,0 +1,187 @@
+// Pali stemmer for search.
+// Builds on Khemarato Bhikkhu's first version.
+// Input: lower-case IAST. Both niggahita spellings are accepted.
+
+routines ( normalize mark_regions exception enclitic keeps_an case_ending participle noun_stem R2 )
+externals ( stem )
+integers ( p1 p2 )
+groupings ( v before_pi )
+
+stringescapes {}
+
+stringdef a-   '{U+0101}'  // ā
+stringdef i-   '{U+012B}'  // ī
+stringdef u-   '{U+016B}'  // ū
+stringdef m    '{U+1E41}'  // ṁ
+stringdef m2   '{U+1E43}'  // ṃ
+stringdef n~   '{U+00F1}'  // ñ
+stringdef t.   '{U+1E6D}'  // ṭ
+
+define v 'aeiou{a-}{i-}{u-}'
+define before_pi 'eou{a-}{i-}{u-}'
+
+// Fold ṃ to ṁ so a query in either spelling reaches the same stem.
+define normalize as repeat (
+  goto ( [ '{m2}' ] ) <- '{m}'
+)
+
+// R1 begins after the first vowel-consonant sequence, so that a short
+// root (kāya, gāma) keeps its initial syllable. R2 repeats that inside R1.
+define mark_regions as (
+  $p1 = limit
+  $p2 = limit
+  do ( gopast v gopast non-v setmark p1
+       gopast v gopast non-v setmark p2 )
+)
+
+// Common words the rules would otherwise merge with others, and consonant-stem
+// forms no suffix rule reaches. Checked again once enclitics are off, so that
+// gatiñca stays gati and atthīti reaches atthi.
+define exception as (
+  [substring] atlimit among (
+    'atthi' 'natthi' 'saddhi{m}' 'iti' 'ito' 'd{a-}ni' 'kira' 'ittha{m}'
+    'aha{m}' 'ahosi' 'ahesu{m}' 'ahu' 'aho' 'tayo' 'kati'
+    'ahosi{m}' 'as{i-}ti' 'catur{a-}s{i-}ti'
+    ( )
+    // gati and its compounds stay apart from gata, sugata and duggata.
+    'gati' 'gati{m}' 'gatiy{a-}' 'gatiyo' 'gat{i-}na{m}' ( <- 'gati' )
+    'sugati' 'sugati{m}' 'sugatiy{a-}' ( <- 'sugati' )
+    'duggati' 'duggati{m}' 'duggatiy{a-}' ( <- 'duggati' )
+    'attano' 'attan{a-}' ( <- 'att' )
+    'manas{a-}' 'manaso' ( <- 'man' )
+    'satth{a-}ra{m}' 'satth{a-}r{a-}' 'satthari' ( <- 'satth' )
+    'pitara{m}' 'pitar{a-}' 'pitari' ( <- 'pit' )
+    'm{a-}tara{m}' 'm{a-}tar{a-}' 'm{a-}tari' ( <- 'm{a-}t' )
+    'bh{a-}tara{m}' 'bh{a-}tar{a-}' ( <- 'bh{a-}t' )
+    '{a-}yasmato' '{a-}yasmat{a-}' ( <- '{a-}yasm' )
+    'mahato' 'mahat{a-}' ( <- 'mah' )
+    'arahato' 'arahat{a-}' ( <- 'arah' )
+  )
+)
+
+backwardmode (
+
+  define R2 as $p2 <= cursor
+
+  // Enclitics and quotative ti come off first. -ñca and -mpi show a
+  // niggahita before the enclitic, -eva joins a final vowel, and a vowel
+  // lengthens before ti. -pi needs a preceding vowel that can end a word,
+  // which spares sappi and ukkhipi. In papañca and muñc-, ñc is the root.
+  define enclitic as (
+    not 'papa{n~}ca' not 'papa{n~}ce' not 'mu{n~}ca' not 'mu{n~}ce'
+    setlimit tomark p1 for ( [substring] ) among (
+      '{n~}ca' '{n~}ce' '{n~}hi' '{n~}ceva' '{n~}c{a-}pi' 'mpi' ( <- '{m}' )
+      'ameva' ( <- 'a{m}' )
+      'eneva' ( <- 'ena' )
+      'asseva' ( <- 'assa' )
+      'esveva' ( <- 'esu' )
+      'ass{a-}pi' ( <- 'assa' )
+      'en{a-}pi' ( <- 'ena' )
+      'pi' ( test before_pi delete )
+      'yeva' ( delete )
+      'avato' 'avat{a-}' 'avata{m}' ( <- 'av' )
+      'imato' 'imat{a-}' ( <- 'im' )
+      'umato' 'umat{a-}' ( <- 'um' )
+      '{t.}{t.}heva' ( <- '{t.}{t.}h' )
+      'tteva' ( <- 'tt' )
+      'ttheva' ( <- 'tth' )
+      'cceva' ( <- 'cc' )
+      'bbeva' ( <- 'bb' )
+      'mmeva' ( <- 'mm' )
+      'ddheva' ( <- 'ddh' )
+      'kkheva' ( <- 'kkh' )
+      '{n~}{n~}eva' ( <- '{n~}{n~}' )
+      '{a-}ti' ( <- 'a' )
+      'iy{a-}ti' ( <- 'iy{a-}' )
+      'in{a-}ti' ( <- 'in{a-}' )
+      'un{a-}ti' ( <- 'un{a-}' )
+      'amh{a-}ti' ( <- 'amh{a-}' )
+      'asm{a-}ti' ( <- 'asm{a-}' )
+      '{i-}ti' ( <- 'i' )
+      '{u-}ti' ( <- 'u' )
+    )
+  )
+
+  // Whole words that end like -āna nouns but keep their -ān.
+  define keeps_an as (
+    ( 'asam{a-}n' or 'sam{a-}n' or 'sampaj{a-}n' or 'paj{a-}n' or 'sa{n~}j{a-}n' or
+      'vij{a-}n' or 'parij{a-}n' or 'abhij{a-}n' or 'pa{t.}ij{a-}n' or 'anuj{a-}n' or
+      '{a-}j{a-}n' or 'j{a-}n' ) atlimit
+  )
+
+  define case_ending as (
+    // These keep their stem whatever the longest suffix would take.
+    ( test ( ( 'asam{a-}na{m}' or 'sam{a-}na{m}' or 'sampaj{a-}na{m}' or 'paj{a-}na{m}' or
+        'sa{n~}j{a-}na{m}' or 'vij{a-}na{m}' or 'parij{a-}na{m}' or 'j{a-}na{m}' ) atlimit ) [ 'a{m}' ] delete ) or
+    ( test ( ( '{a-}yasm{a-}' or 'yasm{a-}' ) atlimit ) [ '{a-}' ] delete ) or
+    ( test 'hetu' [ 'u' ] delete ) or
+    ( test ( 'manussa' or 'manassa' ) [ 'a' ] delete ) or
+    ( test ( 'hapati' or 'n{a-}pati' or 'dhipati' ) [ 'i' ] delete ) or
+    setlimit tomark p1 for ( [substring] ) delete among (
+      // simple vowels and niggahita
+      'a' '{a-}' 'i' '{i-}' 'u' '{u-}' 'e' 'o'
+      'a{m}' 'i{m}' 'u{m}'
+      // a-stems, -vant and -mant weak forms
+      'ahi' 'asu'
+      'ena' 'assa' 'esa{m}' 'es{a-}na{m}' '{a-}sa{m}' 'asmi{m}' 'amhi' 'asm{a-}' 'amh{a-}'
+      '{a-}ya' '{a-}na{m}' 'ehi' 'ebhi' 'esu' '{a-}ni'
+      // ā-stems
+      '{a-}ya{m}' '{a-}yo' '{a-}hi' '{a-}su'
+      // i-, ī-stems
+      'ino' 'in{a-}' 'ina{m}' 'issa' 'ismi{m}' 'imhi'
+      '{i-}na{m}' '{i-}hi' '{i-}su'
+      // u-, ū-stems
+      'uno' 'un{a-}' 'ussa' 'usmi{m}' 'umhi'
+      'uy{a-}' 'uya{m}' 'uyo'
+      '{u-}na{m}' '{u-}hi' '{u-}su'
+      // present
+      '{a-}mi' '{a-}ti' '{a-}nti' '{a-}tha' 'asi' 'ati' 'at{i-}' 'anti' 'ante'
+      'emi' 'esi' 'etha' 'eti' 'enti'
+      'omi' 'osi' 'otha' 'oti' 'onti'
+      // imperative
+      'atu' '{a-}tu' 'antu' 'etu' 'entu' 'otu' 'ontu' 'assu'
+      // optative
+      'eyya' 'eyyo' 'eyya{m}' 'eyy{a-}mi' 'eyy{a-}ma' 'eyy{a-}si'
+      'eyy{a-}tha' 'eyyu{m}' 'eyyu'
+      // aorist
+      'i{m}su' 'imha' 'imh{a-}' 'ittha' 'esu{m}' 'a{m}su'
+      // future and conditional
+      'iss{a-}mi' 'iss{a-}ma' 'issasi' 'issatha' 'issati' 'issanti'
+      'iss{a-}' 'issa{m}' 'ess{a-}mi' 'ess{a-}ma' 'essati' 'essanti'
+      // non-finite
+      'am{a-}na{m}'
+      'itv{a-}' 'itv{a-}na' 'tv{a-}' 'tv{a-}na'
+      'etv{a-}' 'etv{a-}na' 'itu{m}' 'etu{m}' 'itave'
+    )
+  )
+
+  // Participial stems, left once the case ending has gone.
+  define participle as (
+    not 'ekant' not 'anant' not '{a-}mant' not 'pariyant' not 'bhadant' not 'samant'
+    setlimit tomark p1 for ( [substring] ) delete among (
+      'am{a-}n' 'ant' 'ent' 'ont'
+    )
+  )
+
+  // Noun stems, so that āpattiyā meets āpatti and upādānaṁ, cut by -ānaṁ,
+  // meets upādānassa. R2 spares words with little left: ariya, ekanta,
+  // pahīna, apāya. samāna and the root of jānāti keep their -ān.
+  define noun_stem as (
+    not keeps_an
+    ( test ( 'nibb{a-}n' or 'brahm{a-}n' or 'r{a-}j{a-}n' ) [ '{a-}n' ] delete ) or
+    ( [substring] R2 delete among ( '{a-}n' '{i-}n' '{u-}n' 'iy' '{a-}y' ) )
+  )
+)
+
+define stem as (
+  do normalize
+  exception or (
+    do mark_regions
+    backwards ( do enclitic )
+    exception or backwards (
+      do case_ending
+      do participle
+      do noun_stem
+    )
+  )
+)
