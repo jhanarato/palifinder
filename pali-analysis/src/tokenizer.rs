@@ -1,6 +1,13 @@
 use std::collections::HashSet;
 use std::str::CharIndices;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream, Tokenizer};
+use unicode_normalization::UnicodeNormalization;
+
+/// Canonical form: typed Pali can arrive decomposed, which the alphabet would split.
+#[must_use]
+pub fn nfc(text: &str) -> String {
+    text.nfc().collect()
+}
 
 #[must_use]
 pub fn tokenize(segment: &str) -> Vec<String> {
