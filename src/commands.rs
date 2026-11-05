@@ -27,10 +27,9 @@ pub struct Arguments {
     #[arg(
         short = 's',
         long = "stemmer",
-        default_value = "snowball",
-        help = "Stemmer variant for text analyzer"
+        help = "Stemmer variant for text analyzer [default: snowball, or what the index was built with]"
     )]
-    pub stemmer: Stemmer,
+    pub stemmer: Option<Stemmer>,
 
     #[arg(
         long = "index-dir",
@@ -59,6 +58,8 @@ pub enum Command {
     },
     /// Create the CSV stem file
     StemTable,
+    /// Print each line of standard input followed by a tab and its analyzed tokens
+    StemWords,
     /// Display Pali characters expected by the tokenizer
     PaliChars,
     /// Display all characters excluded by the tokenizer
@@ -75,7 +76,7 @@ pub enum Command {
     },
 }
 
-#[derive(Copy, Clone, Debug, ValueEnum)]
+#[derive(Copy, Clone, Debug, PartialEq, ValueEnum)]
 pub enum Stemmer {
     /// Use snowball algorithm
     Snowball,

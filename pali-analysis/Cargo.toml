@@ -11,9 +11,13 @@ anyhow = "1.0.104"
 serde_json = "1.0.151"
 tantivy = "0.26.1"
 csv = "1.4.0"
+unicode-normalization = "0.1.24"
 
 [lints.rust]
 warnings = "deny"
 
 [lints.clippy]
 pedantic = "deny"
+
+[dev-dependencies]
+temp-dir = "0.2.0"

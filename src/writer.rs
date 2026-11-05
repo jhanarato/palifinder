@@ -13,19 +13,30 @@ pub struct PaliWriter {
 impl PaliWriter {
     pub fn new(index: &PaliIndex) -> Result<Self> {
         Ok(Self {
-            writer: index.as_ref().writer(50_000_000)?,
+            // One thread keeps document order, and so the order of tied results, the
+            // same from build to build.
+            writer: index.as_ref().writer_with_num_threads(1, 50_000_000)?,
             uid: index.uid_field()?,
             contents: index.contents_field()?,
         })
     }
 
-    pub fn add_texts(&mut self, texts: impl Iterator<Item = Result<PaliText>>) -> Result<()> {
+    /// Add the texts and commit, returning how many there were.
+    pub fn add_texts(&mut self, texts: impl Iterator<Item = Result<PaliText>>) -> Result<usize> {
+        let mut count = 0;
         for text in texts {
             let text = text?;
             let doc = self.create_document(&text);
             self.writer.add_document(doc)?;
+            count += 1;
         }
         self.writer.commit()?;
+        Ok(count)
+    }
+
+    /// Wait for background merges, which would otherwise be abandoned half done.
+    pub fn finish(self) -> Result<()> {
+        self.writer.wait_merging_threads()?;
         Ok(())
     }
 

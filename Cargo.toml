@@ -29,4 +29,5 @@ name = "pali"
 path = "src/main.rs"
 
 [dev-dependencies]
+rusqlite = { version = "0.40.1", features = ["bundled"] }
 temp-dir = "0.2.0"
