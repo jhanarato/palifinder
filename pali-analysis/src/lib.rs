@@ -17,7 +17,8 @@ mod tests;
 pub mod tokenizer;
 pub mod vocabulary;
 
-const ANALYZER_SOURCES: [&str; 7] = [
+const ANALYZER_SOURCES: [&str; 8] = [
+    include_str!("snowball/pali.sbl"),
     include_str!("snowball/pali.rs"),
     include_str!("snowball/snowball_env.rs"),
     include_str!("snowball.rs"),
