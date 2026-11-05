@@ -1,6 +1,13 @@
 use std::collections::HashSet;
 use std::str::CharIndices;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, Token, TokenStream, Tokenizer};
+use unicode_normalization::UnicodeNormalization;
+
+/// Canonical form: typed Pali can arrive decomposed, which the alphabet would split.
+#[must_use]
+pub fn nfc(text: &str) -> String {
+    text.nfc().collect()
+}
 
 #[must_use]
 pub fn tokenize(segment: &str) -> Vec<String> {
@@ -32,8 +39,9 @@ impl Default for PaliTokenizer {
             alphabet: HashSet::from([
                 'A', 'B', 'C', 'D', 'E', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R',
                 'S', 'T', 'U', 'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-                'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'v', 'y', 'Ñ', 'ñ', 'Ā', 'ā',
-                'Ī', 'ī', 'Ū', 'ū', 'Ḍ', 'ḍ', 'ḷ', 'ṁ', 'ṅ', 'ṇ', 'Ṭ', 'ṭ',
+                'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'v', 'w', 'y', 'Ñ', 'ñ', 'Ā', 'ā',
+                'Ī', 'ī', 'Ū', 'ū', 'Ḍ', 'ḍ', 'Ḷ', 'ḷ', 'Ṁ', 'ṁ', 'Ṃ', 'ṃ', 'Ṅ', 'ṅ', 'Ṇ', 'ṇ', 'Ṭ',
+                'ṭ',
             ]),
             token: Token::default(),
         }
@@ -51,6 +59,10 @@ impl Tokenizer for PaliTokenizer {
             token: &mut self.token,
         }
     }
+}
+
+fn fold_niggahita(c: char) -> char {
+    if matches!(c, 'ṃ' | 'Ṃ' | 'Ṁ') { 'ṁ' } else { c }
 }
 
 pub struct PaliTokenStream<'a> {
@@ -79,7 +91,8 @@ impl TokenStream for PaliTokenStream<'_> {
                 let offset_to = self.search_token_end();
                 self.token.offset_from = offset_from;
                 self.token.offset_to = offset_to;
-                self.token.text.push_str(&self.text[offset_from..offset_to]);
+                let word = &self.text[offset_from..offset_to];
+                self.token.text.extend(word.chars().map(fold_niggahita));
                 return true;
             }
         }
@@ -119,6 +132,16 @@ mod tests {
         assert_token(&tokens[0], 0, "Evaṁ", 0, 6);
         assert_token(&tokens[1], 1, "me", 7, 9);
         assert_token(&tokens[2], 2, "sutaṁ", 10, 17);
+    }
+
+    #[test]
+    fn test_both_niggahita_spellings_give_the_same_token() {
+        assert_eq!(tokenize("saṃyutta Saṁyutta SAṂYUTTA"), vec!("saṁyutta", "saṁyutta", "saṁyutta"));
+    }
+
+    #[test]
+    fn test_tokenizer_keeps_capital_diacritics() {
+        assert_eq!(tokenize("Ṇāma Ḷa Ṅa"), vec!("ṇāma", "ḷa", "ṅa"));
     }
 
     #[test]
