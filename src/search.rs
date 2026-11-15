@@ -151,9 +151,9 @@ mod tests {
     }
 
     #[test]
-    fn test_a_word_finds_its_text() {
-        assert_eq!(found("dhammassa"), mn1());
-        assert_eq!(found("Nibbānassa"), mn1());
+    fn test_inflections_find_each_other() {
+        assert_eq!(found("nibbānaṁ"), mn1());
+        assert_eq!(found("dhammo"), mn1());
     }
 
     #[test]
