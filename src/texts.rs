@@ -1,3 +1,4 @@
+use pali_analysis::tokenizer::nfc;
 use anyhow::{Context, Error, Result};
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
@@ -23,6 +24,15 @@ impl PaliFiles {
             .map(DirEntry::into_path)
     }
 
+    /// Fail on any directory that cannot be walked, which `files` would skip.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn check_readable(&self) -> Result<()> {
+        for entry in WalkDir::new(&self.location) {
+            entry.with_context(|| format!("reading {}", self.location.display()))?;
+        }
+        Ok(())
+    }
+
     pub fn texts(&self) -> impl Iterator<Item = Result<PaliText>> {
         self.files().map(|file| PaliText::new(&file))
     }
@@ -38,10 +48,16 @@ impl PaliFiles {
         false
     }
 
-    pub fn segments(&self) -> impl Iterator<Item = Segment> {
-        self.texts()
-            .filter_map(Result::ok)
-            .flat_map(|text| text.segments)
+    /// Every segment, failing on any text that cannot be read: a stem table built from
+    /// part of the texts must not replace a complete one.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn all_segments(&self) -> Result<Vec<Segment>> {
+        self.check_readable()?;
+        let mut segments = Vec::new();
+        for text in self.texts() {
+            segments.extend(text?.segments);
+        }
+        Ok(segments)
     }
 }
 
@@ -104,16 +120,31 @@ impl PaliText {
     pub fn new(path: &Path) -> Result<Self> {
         let uid = TextUid::try_from(path)?;
 
-        let json = std::fs::read_to_string(path)?;
-        let entries: BTreeMap<String, String> = serde_json::from_str(json.as_str())?;
+        let json = std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+        let entries: BTreeMap<String, String> =
+            serde_json::from_str(json.as_str()).with_context(|| format!("parsing {}", path.display()))?;
         let segments: Vec<Segment> = entries
             .iter()
             .map(|(k, v)| Segment {
                 uid: k.clone(),
-                text: v.clone(),
+                text: nfc(v),
             })
             .collect();
         Ok(Self { uid, segments })
+    }
+}
+
+#[cfg(test)]
+impl PaliText {
+    #[must_use]
+    pub fn for_test(uid: &str, text: &str) -> Self {
+        Self {
+            uid: TextUid(uid.to_string()),
+            segments: vec![Segment {
+                uid: format!("{uid}:1"),
+                text: text.to_string(),
+            }],
+        }
     }
 }
 
@@ -161,6 +192,23 @@ mod tests {
         let file = dir.child("mn1_root-pli-ms.json");
         std::fs::write(&file, TEXT_JSON).unwrap();
         PaliText::new(file.as_path()).unwrap()
+    }
+
+    #[test]
+    fn test_a_broken_text_fails_the_whole_read() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(dir.child("mn1_root-pli-ms.json"), TEXT_JSON).unwrap();
+        std::fs::write(dir.child("mn2_root-pli-ms.json"), "{\"mn2:1").unwrap();
+        let error = PaliFiles::new(dir.path().to_path_buf()).all_segments().unwrap_err();
+        assert!(format!("{error:#}").contains("mn2_root-pli-ms.json"), "{error:#}");
+    }
+
+    #[test]
+    fn test_text_is_composed_when_read() {
+        let dir = TempDir::new().unwrap();
+        let file = dir.child("mn1_root-pli-ms.json");
+        std::fs::write(&file, "{\"mn1:1\": \"nibba\u{304}nassa\"}").unwrap();
+        assert_eq!(PaliText::new(&file).unwrap().segments[0].text, "nibbānassa");
     }
 
     #[test]

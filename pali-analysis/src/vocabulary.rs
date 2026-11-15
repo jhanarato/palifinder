@@ -20,6 +20,11 @@ impl Vocabulary {
         vocabulary
     }
 
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.tokens.is_empty()
+    }
+
     pub fn add_text(&mut self, text: &str) {
         let mut stream = self.analyzer.token_stream(text);
         stream.process(&mut |token| {

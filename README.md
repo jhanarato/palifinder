@@ -70,6 +70,7 @@ Commands:
   find         Search the index
   analyze      Display the tokens emitted by the text analyzer
   stem-table   Create the CSV stem file
+  stem-words   Print each line of standard input followed by a tab and its analyzed tokens
   pali-chars   Display Pali characters expected by the tokenizer
   other-chars  Display all characters excluded by the tokenizer
   stop-words   List terms by frequency, descending
@@ -79,7 +80,7 @@ Options:
       --dpd-db <DPD_DB>         Digital pali dictionary SQLite database file [default: data/dpd.db]
       --texts <TEXTS>           Directory containing Pali root texts [default: /opt/sc/sc-flask/sc-data/sc_bilara_data/root/pli/ms]
       --stem-file <STEM_FILE>   Location of file containing stems [default: data/stems.csv]
-  -s, --stemmer <STEMMER>       Stemmer variant for text analyzer [default: snowball] [possible values: snowball, dictionary]
+  -s, --stemmer <STEMMER>       Stemmer variant for text analyzer [possible values: snowball, dictionary]
       --index-dir <INDEX_PATH>  Location of index [default: index]
   -h, --help                    Print help (see more with '--help')
 ```
@@ -101,18 +102,10 @@ pali --stemmer dictionary index
 
 ## Querying the index
 
-Either stemmer can be used, but it's advisable to use the same stemmer that you indexed with. Any differences between the two can give unexpected results.
-
-Snowball:
+The index records its stemmer, and `pali find` uses it. It refuses a different stemmer, and refuses to search if the rules or stem table have changed since indexing, because queries stemmed differently from the index quietly find too little. Run `pali index` again after upgrading.
 
 ```cli
 pali find Evaṁ me sutaṁ
-```
-
-Dictionary:
-
-```cli
-pali --stemmer dictionary find Evaṁ me sutaṁ
 ```
 
 ## Development

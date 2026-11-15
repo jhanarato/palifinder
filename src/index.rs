@@ -1,4 +1,3 @@
-use pali_analysis::analyzers::AnalyzerConfig;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 use tantivy::Index;
@@ -18,7 +17,7 @@ impl PaliIndex {
     const PLI_STEM: &str = "pli_stem";
 
     #[allow(clippy::missing_errors_doc)]
-    pub fn create(location: Location, config: AnalyzerConfig) -> Result<Self> {
+    pub fn create(location: Location, analyzer: TextAnalyzer) -> Result<Self> {
         let schema = Self::schema();
 
         let builder = Index::builder().schema(schema.clone());
@@ -28,18 +27,23 @@ impl PaliIndex {
             Location::InDir { index_path } => builder.create_in_dir(index_path)?,
         };
 
-        let analyzer = TextAnalyzer::try_from(config)?;
         index.tokenizers().register(Self::PLI_STEM, analyzer);
 
         Ok(Self { index })
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub fn open(path: &Path, config: AnalyzerConfig) -> Result<Self> {
+    pub fn open(path: &Path, analyzer: TextAnalyzer) -> Result<Self> {
         let index = Index::open_in_dir(path)?;
-        let analyzer = TextAnalyzer::try_from(config)?;
         index.tokenizers().register(Self::PLI_STEM, analyzer);
         Ok(Self { index })
+    }
+
+    /// Whether a directory holds an index this program made: Tantivy can open it, so its
+    /// meta.json is a full record with schema, opstamp and segments, and the schema is ours.
+    #[must_use]
+    pub fn is_ours(path: &Path) -> bool {
+        Index::open_in_dir(path).is_ok_and(|index| index.schema() == Self::schema())
     }
 
     fn schema() -> Schema {

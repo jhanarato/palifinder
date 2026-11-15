@@ -4,12 +4,11 @@ use crate::table::StemTable;
 use crate::tokenizer::PaliTokenizer;
 use anyhow::Error;
 use csv::Reader;
-use std::path::PathBuf;
 use tantivy::tokenizer::{LowerCaser, StopWordFilter, TextAnalyzer};
 
 pub enum AnalyzerConfig {
     Algorithmic,
-    Dictionary { stem_file: PathBuf },
+    Dictionary { stem_table: Vec<u8> },
 }
 
 impl TryFrom<AnalyzerConfig> for TextAnalyzer {
@@ -27,9 +26,8 @@ impl TryFrom<AnalyzerConfig> for TextAnalyzer {
                     .filter(AlgorithmicStemmer)
                     .build())
             }
-            AnalyzerConfig::Dictionary { stem_file } => {
-                let reader = Reader::from_path(stem_file)?;
-                let table = StemTable::try_from(reader)?;
+            AnalyzerConfig::Dictionary { stem_table } => {
+                let table = StemTable::try_from(Reader::from_reader(stem_table.as_slice()))?;
                 Ok(TextAnalyzer::builder(PaliTokenizer::default())
                     .filter(LowerCaser)
                     .filter(stop_word_filter)
