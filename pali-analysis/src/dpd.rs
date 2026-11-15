@@ -65,7 +65,8 @@ impl Dictionary {
     pub fn lookup(&self, term: &str) -> Result<Vec<u32>> {
         let lookup = self.connection.query_one(
             "SELECT headwords FROM lookup WHERE lookup_key == (?1) ",
-            [term],
+            // SuttaCentral writes the niggahita ṁ; DPD's lookup keys spell it ṃ.
+            [term.replace('ṁ', "ṃ")],
             |row| Ok(LookupFields { headwords: row.get(0)? }),
         )?;
         let ids: Vec<u32> = serde_json::from_str(lookup.headwords.as_str())?;
@@ -74,4 +75,26 @@ impl Dictionary {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+
+    fn dictionary() -> Dictionary {
+        let connection = Connection::open_in_memory().unwrap();
+        connection
+            .execute_batch(
+                "CREATE TABLE dpd_headwords (id INTEGER, lemma_1 TEXT, stem TEXT);
+                 CREATE TABLE lookup (lookup_key TEXT, headwords TEXT);
+                 INSERT INTO dpd_headwords VALUES (1, 'dhamma 1', 'dhamm');
+                 INSERT INTO lookup VALUES ('dhammaṃ', '[1]');",
+            )
+            .unwrap();
+        Dictionary::from(connection)
+    }
+
+    #[test]
+    fn test_lookup_finds_either_niggahita_spelling() {
+        let dictionary = dictionary();
+        assert_eq!(dictionary.stems("dhammaṃ").unwrap(), vec!["dhamm"]);
+        assert_eq!(dictionary.stems("dhammaṁ").unwrap(), vec!["dhamm"]);
+    }
+}

@@ -237,7 +237,7 @@ fn test_pali_chars_lists_the_alphabet_in_order() {
     let dir = TempDir::new().unwrap();
     let output = succeeds(&pali(dir.path(), &["pali-chars"]));
     let chars: Vec<char> = output.split_whitespace().map(|c| c.chars().next().unwrap()).collect();
-    for expected in ['a', 'ā', 'ṁ', 'ñ', 'Ḍ'] {
+    for expected in ['a', 'ā', 'ṃ', 'ṁ', 'ñ', 'Ḍ'] {
         assert!(chars.contains(&expected), "{expected} in {output}");
     }
     assert!(!chars.contains(&'x') && !chars.contains(&'«'), "{output}");

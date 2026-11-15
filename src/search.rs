@@ -157,6 +157,12 @@ mod tests {
     }
 
     #[test]
+    fn test_either_niggahita_finds_the_text() {
+        assert_eq!(found("saṃyutta"), mn1());
+        assert_eq!(found("saṁyutta"), mn1());
+    }
+
+    #[test]
     fn test_decomposed_query_finds_the_text() {
         assert_eq!(found("nibba\u{304}nassa"), mn1());
     }
