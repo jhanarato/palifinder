@@ -82,4 +82,8 @@ pub enum Stemmer {
     Snowball,
     /// Use dictionary lookup
     Dictionary,
+    /// Use dictionary lookup, then the snowball algorithm for unknown terms
+    Hybrid,
+    /// As hybrid, and group the verbal forms of each root
+    Family,
 }

@@ -5,8 +5,9 @@ pub mod index;
 mod writer;
 mod search;
 
-use pali_analysis::analyzers::AnalyzerConfig;
+use pali_analysis::analyzers::{AnalyzerConfig, stop_word_filter};
 use crate::commands::Stemmer;
+use pali_analysis::dict_stemmer::DictionaryMode;
 use pali_analysis::dpd::Dictionary;
 use crate::index::{Location, PaliIndex};
 use crate::stop_words::most_frequent_words;
@@ -86,13 +87,15 @@ fn create_stem_table(
     let files = PaliFiles::new(PathBuf::from(texts_path));
     let analyzer = TextAnalyzer::builder(PaliTokenizer::default())
         .filter(LowerCaser)
+        .filter(stop_word_filter())
         .build();
     let vocabulary = Vocabulary::new(files.all_segments()?.into_iter().map(|segment| segment.text), analyzer);
     if vocabulary.is_empty() {
         bail!("found no Pali texts at {}", texts_path.display());
     }
     let dictionary = Dictionary::open(dictionary_path)?;
-    let term_stems = StemTable::new(vocabulary, &dictionary);
+    dictionary.check_preferred_roots()?;
+    let term_stems = StemTable::new(vocabulary, &dictionary)?;
     term_stems.save(stem_file_path)?;
     Ok(())
 }
@@ -103,11 +106,15 @@ fn read_stem_table(stem_file: &Path) -> Result<Vec<u8>> {
 
 /// The analyzer for a stemmer, with a table's bytes for those that need one.
 fn analyzer_config(stemmer: Stemmer, stem_table: Option<Vec<u8>>) -> AnalyzerConfig {
-    match stemmer {
-        Stemmer::Snowball => AnalyzerConfig::Algorithmic,
-        Stemmer::Dictionary => AnalyzerConfig::Dictionary {
-            stem_table: stem_table.unwrap_or_default(),
-        },
+    let mode = match stemmer {
+        Stemmer::Snowball => return AnalyzerConfig::Algorithmic,
+        Stemmer::Dictionary => DictionaryMode::Plain,
+        Stemmer::Hybrid => DictionaryMode::Hybrid,
+        Stemmer::Family => DictionaryMode::Family,
+    };
+    AnalyzerConfig::Dictionary {
+        stem_table: stem_table.unwrap_or_default(),
+        mode,
     }
 }
 
@@ -352,6 +359,7 @@ fn search_index(index_path: &Path, stem_file_path: &Path, requested: Option<Stem
 #[cfg(test)]
 mod main_tests {
     use super::*;
+    use rusqlite::Connection;
     use std::fs::create_dir;
     use temp_dir::TempDir;
 
@@ -389,20 +397,20 @@ mod main_tests {
 
     #[test]
     fn test_search_takes_the_stemmer_from_the_index() {
-        let found = recorded_stemmer(&record(Stemmer::Dictionary, None)).unwrap();
-        assert_eq!(found, Stemmer::Dictionary);
+        let found = recorded_stemmer(&record(Stemmer::Hybrid, None)).unwrap();
+        assert_eq!(found, Stemmer::Hybrid);
     }
 
     #[test]
     fn test_search_refuses_a_different_stemmer() {
-        let record = record(Stemmer::Dictionary, Some(b"t"));
-        assert!(check_record(&record, Stemmer::Dictionary, Some(Stemmer::Snowball), Some(b"t")).is_err());
+        let record = record(Stemmer::Hybrid, Some(b"t"));
+        assert!(check_record(&record, Stemmer::Hybrid, Some(Stemmer::Family), Some(b"t")).is_err());
     }
 
     #[test]
     fn test_search_refuses_a_changed_table() {
-        let record = record(Stemmer::Dictionary, Some(b"t"));
-        assert!(check_record(&record, Stemmer::Dictionary, None, Some(b"other")).is_err());
+        let record = record(Stemmer::Hybrid, Some(b"t"));
+        assert!(check_record(&record, Stemmer::Hybrid, None, Some(b"other")).is_err());
     }
 
     #[test]
@@ -412,9 +420,9 @@ mod main_tests {
         create_dir(&texts).unwrap();
         write(texts.join("mn1_root-pli-ms.json"), r#"{"mn1:1": "dhammo"}"#).unwrap();
         let stems = dir.child("stems.csv");
-        write(&stems, "term,dpd_stem,snowball_stem\ndhammo,dhamma,dhamm\ndhammassa,dhamma,dhammass\n").unwrap();
+        write(&stems, "term,dpd_stem,snowball_stem,family,fallback\ndhammo,dhamma,dhamm,,dhamma\n").unwrap();
         let index = dir.child("index");
-        create_index(texts, &index, &stems, Stemmer::Dictionary).unwrap();
+        create_index(texts, &index, &stems, Stemmer::Hybrid).unwrap();
         assert_eq!(find(&index, &stems, None, "dhammassa").unwrap().len(), 1);
         assert!(find(&index, &stems, None, "xyzzy").unwrap().is_empty());
         assert!(!sibling(&index, ".building").exists());
@@ -573,6 +581,38 @@ mod main_tests {
         std::os::unix::fs::symlink(&real, &link).unwrap();
         create_index(texts_dir(&dir), &link, &dir.child("none"), Stemmer::Snowball).unwrap();
         assert!(link.is_symlink() && real.join(STEMMER_FILE).exists());
+    }
+
+    #[test]
+    fn test_a_dictionary_table_goes_end_to_end_into_a_family_index() {
+        let dir = TempDir::new().unwrap();
+        let db = dir.child("dpd.db");
+        let conn = Connection::open(&db).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE dpd_headwords (id INTEGER, lemma_1 TEXT, pos TEXT, root_key TEXT,
+                family_root TEXT, root_base TEXT, construction TEXT);
+            CREATE TABLE lookup (lookup_key TEXT, headwords TEXT, deconstructor TEXT);
+            INSERT INTO dpd_headwords VALUES (1, 'gacchati 1', 'pr', '√gam 1', '√gam', '', ''),
+                (2, 'gata 1', 'pp', '√gam 1', '√gam', '', ''),
+                (3, 'vutta 2', 'pp', '√vac', '√vac', '', ''), (4, 'sati 1', 'fem', '√sar 2', '√sar', '', ''),
+                (5, 'sutta 2', 'nt', '√siv 1', '√siv', '', ''), (6, 'attha 1', 'nt', '√atth', '√atth', '', ''),
+                (7, 'kappa 1', 'masc', '√kapp 1', '√kapp', '', ''), (8, 'atthi', 'pr', '√as 1', '√as', '', ''),
+                (9, 'suta 1', 'pp', '√su 1', '√su', '', ''), (10, 'sayaṃ', 'ind', '', '', '', ''),
+                (11, 'kāya 1', 'masc', '√ci 1', '√ci', '', ''), (12, 'āyati', 'pr', '√yat 2', '√yat', '', ''),
+                (13, 'asati', 'loc', '√as 1', '√as', '', ''), (14, 'asanta', 'prp', '√as 1', '√as', '', ''),
+                (15, 'seyya 1.1', 'adj', '', '', '', ''), (16, 'dassati 1.1', 'fut', '√dā 1', '√dā', '', '');
+            INSERT INTO lookup VALUES ('gacchati', '[1]', ''), ('gato', '[2]', '');",
+        )
+        .unwrap();
+        drop(conn);
+        let texts = dir.child("texts");
+        create_dir(&texts).unwrap();
+        write(texts.join("mn1_root-pli-ms.json"), r#"{"mn1:1": "gato"}"#).unwrap();
+        let stems = dir.child("stems.csv");
+        create_stem_table(&texts, &db, &stems).unwrap();
+        let index = dir.child("index");
+        create_index(texts, &index, &stems, Stemmer::Family).unwrap();
+        assert_eq!(find(&index, &stems, None, "gacchati").unwrap().len(), 1);
     }
 
     #[test]

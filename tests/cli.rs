@@ -9,9 +9,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
 use temp_dir::TempDir;
 
-const STEM_HEADER: &str = "term,dpd_stem,snowball_stem\n";
-const STEMS: &str = "term,dpd_stem,snowball_stem\n\
-    dhammo,dhamma,dhamm\ngato,gata,gat\n";
+const STEM_HEADER: &str = "term,dpd_stem,snowball_stem,family,fallback\n";
+const STEMS: &str = "term,dpd_stem,snowball_stem,family,fallback\n\
+    dhammo,dhamma,dhamm,,dhamma\ngato,gata,gat,gam,gata\n";
 
 /// `pali` run in `dir`, so that its default paths (data/dpd.db, index) fall inside it.
 fn pali(dir: &Path, args: &[&str]) -> Output {
@@ -78,15 +78,24 @@ fn building_files(dir: &Path) -> Vec<String> {
         .collect()
 }
 
-/// A small DPD, in the shape `stem-table` reads.
+/// The smallest DPD that `stem-table` accepts: it holds every preferred root.
 fn dpd(dir: &TempDir) -> PathBuf {
     let db = dir.child("dpd.db");
     let conn = Connection::open(&db).unwrap();
     conn.execute_batch(
-        "CREATE TABLE dpd_headwords (id INTEGER, lemma_1 TEXT, stem TEXT);
-        CREATE TABLE lookup (lookup_key TEXT, headwords TEXT);
-        INSERT INTO dpd_headwords VALUES (1, 'gacchati 1', 'gacch'), (2, 'gata 1', 'ga');
-        INSERT INTO lookup VALUES ('gacchati', '[1]'), ('gato', '[2]'), ('gatā', '[2]');",
+        "CREATE TABLE dpd_headwords (id INTEGER, lemma_1 TEXT, pos TEXT, root_key TEXT,
+            family_root TEXT, root_base TEXT, construction TEXT);
+        CREATE TABLE lookup (lookup_key TEXT, headwords TEXT, deconstructor TEXT);
+        INSERT INTO dpd_headwords VALUES (1, 'gacchati 1', 'pr', '√gam 1', '√gam', '', ''),
+            (2, 'gata 1', 'pp', '√gam 1', '√gam', '', ''),
+            (3, 'vutta 2', 'pp', '√vac', '√vac', '', ''), (4, 'sati 1', 'fem', '√sar 2', '√sar', '', ''),
+            (5, 'sutta 2', 'nt', '√siv 1', '√siv', '', ''), (6, 'attha 1', 'nt', '√atth', '√atth', '', ''),
+            (7, 'kappa 1', 'masc', '√kapp 1', '√kapp', '', ''), (8, 'atthi', 'pr', '√as 1', '√as', '', ''),
+            (9, 'suta 1', 'pp', '√su 1', '√su', '', ''), (10, 'sayaṃ', 'ind', '', '', '', ''),
+            (11, 'kāya 1', 'masc', '√ci 1', '√ci', '', ''), (12, 'āyati', 'pr', '√yat 2', '√yat', '', ''),
+            (13, 'asati', 'loc', '√as 1', '√as', '', ''), (14, 'asanta', 'prp', '√as 1', '√as', '', ''),
+            (15, 'seyya 1.1', 'adj', '', '', '', ''), (16, 'dassati 1.1', 'fut', '√dā 1', '√dā', '', '');
+        INSERT INTO lookup VALUES ('gacchati', '[1]', ''), ('gato', '[2]', '');",
     )
     .unwrap();
     db
@@ -96,19 +105,18 @@ fn dpd(dir: &TempDir) -> PathBuf {
 fn test_stem_table_builds_a_table_that_indexes_and_finds() {
     let dir = TempDir::new().unwrap();
     let (texts, db, stems) = (texts(&dir, r#"{"mn1:1": "gato"}"#), dpd(&dir), dir.child("stems.csv"));
-    write(texts.join("mn2_root-pli-ms.json"), r#"{"mn2:1": "gatā"}"#).unwrap();
     succeeds(&pali(dir.path(), &["--texts", s(&texts), "--dpd-db", s(&db), "--stem-file", s(&stems), "stem-table"]));
     let table = read_to_string(&stems).unwrap();
     assert!(table.starts_with(STEM_HEADER), "{table}");
-    assert!(table.lines().any(|line| line.starts_with("gato,ga,")), "{table}");
+    assert!(table.lines().any(|line| line.starts_with("gato,gata,")), "{table}");
     assert_eq!(building_files(dir.path()), Vec::<String>::new());
 
     let index = dir.child("index");
-    let args = ["--texts", s(&texts), "--stem-file", s(&stems), "--index-dir", s(&index), "-s", "dictionary"];
+    let args = ["--texts", s(&texts), "--stem-file", s(&stems), "--index-dir", s(&index), "-s", "family"];
     succeeds(&pali(dir.path(), &[&args[..], &["index"]].concat()));
-    // DPD gives gato and gatā one stem, so each finds the other's text.
-    let found = succeeds(&pali(dir.path(), &["--stem-file", s(&stems), "--index-dir", s(&index), "find", "gato"]));
-    assert!(found.contains("mn1") && found.contains("mn2"), "{found}");
+    // The family groups gato with gacchati, which the texts do not contain.
+    let found = succeeds(&pali(dir.path(), &["--stem-file", s(&stems), "--index-dir", s(&index), "find", "gacchati"]));
+    assert!(found.contains("mn1"), "{found}");
 }
 
 #[test]
@@ -183,6 +191,8 @@ fn test_stem_words_reads_standard_input_with_each_stemmer() {
     let input = "dhammo\ngato\nnibba\u{0304}nassa\n";
     assert_eq!(stem_words(&dir, "snowball", input), ["dhamm", "gat", "nibb"]);
     assert_eq!(stem_words(&dir, "dictionary", input), ["dhamma", "gata", "nibbānassa"]);
+    assert_eq!(stem_words(&dir, "hybrid", input), ["dhamma", "gata", "nibb"]);
+    assert_eq!(stem_words(&dir, "family", input), ["dhamma", "gam", "nibb"]);
 }
 
 #[test]
@@ -205,13 +215,14 @@ fn test_stem_words_without_input_prints_nothing() {
 fn test_a_stemmer_that_needs_a_table_refuses_a_bad_one() {
     let dir = TempDir::new().unwrap();
     for (contents, message) in [
-        ("", "the stem table is empty; run stem-table again"),
+        ("", "has no term column; run stem-table again"),
+        ("term,dpd_stem,snowball_stem,fallback\ndhammo,dhamma,dhamm,dhamma\n", "has no family column; run stem-table again"),
         (STEM_HEADER, "the stem table is empty; run stem-table again"),
-        ("term,dpd_stem,snowball_stem\ndhammo,dhamma\n", "found record with 2 fields"),
+        ("term,dpd_stem,snowball_stem,family,fallback\ndhammo,dhamma\n", "found record with 2 fields"),
     ] {
         let stems = stem_file(&dir, contents);
         for command in [&["stem-words"][..], &["analyze", "dhammo"]] {
-            let args = [&["--stem-file", s(&stems), "-s", "dictionary"][..], command].concat();
+            let args = [&["--stem-file", s(&stems), "-s", "hybrid"][..], command].concat();
             let error = fails(&pali_with_input(dir.path(), &args, "dhammo\n"));
             assert!(error.contains(message), "{contents:?}: {error}");
         }
@@ -225,9 +236,9 @@ fn test_a_stemmer_that_needs_a_table_refuses_a_bad_one() {
 fn test_analyze_prints_the_index_terms() {
     let dir = TempDir::new().unwrap();
     let stems = stem_file(&dir, STEMS);
-    let output = succeeds(&pali(dir.path(), &["--stem-file", s(&stems), "-s", "dictionary", "analyze", "Dhammo ca gato"]));
-    // Lower-cased, the stop word ca dropped, each term looked up in the table.
-    assert_eq!(output, "dhamma gata ");
+    let output = succeeds(&pali(dir.path(), &["--stem-file", s(&stems), "-s", "family", "analyze", "Dhammo ca gato"]));
+    // Lower-cased, the stop word ca dropped, gato grouped under its root.
+    assert_eq!(output, "dhamma gam ");
     let output = succeeds(&pali(dir.path(), &["analyze", "nibba\u{0304}nassa"]));
     assert_eq!(output, "nibb ");
 }
@@ -247,7 +258,7 @@ fn test_pali_chars_lists_the_alphabet_in_order() {
 #[test]
 fn test_other_chars_lists_what_the_tokenizer_drops() {
     let dir = TempDir::new().unwrap();
-    let texts = texts(&dir, r#"{"mn1:1": "evaṁ «me» 1 x", "mn1:2": "sutaṁ"}"#);
+    let texts = texts(&dir, r#"{"mn1:1": "evaṃ «me» 1 x", "mn1:2": "sutaṃ"}"#);
     let output = succeeds(&pali(dir.path(), &["--texts", s(&texts), "other-chars"]));
     assert_eq!(output, "  1 x « » ");
 }
@@ -308,15 +319,15 @@ fn test_stop_words_lists_the_commonest_words() {
 #[test]
 fn test_index_then_find_prints_the_matching_texts() {
     let dir = TempDir::new().unwrap();
-    let texts = texts(&dir, r#"{"mn1:1": "evaṁ me sutaṁ", "mn1:2": "dhammo gato"}"#);
-    write(texts.join("mn2_root-pli-ms.json"), r#"{"mn2:1": "nibbānaṁ"}"#).unwrap();
+    let texts = texts(&dir, r#"{"mn1:1": "evaṃ me sutaṃ", "mn1:2": "dhammo gato"}"#);
+    write(texts.join("mn2_root-pli-ms.json"), r#"{"mn2:1": "nibbānaṃ"}"#).unwrap();
     // The default index directory, in the working directory.
     succeeds(&pali(dir.path(), &["--texts", s(&texts), "index"]));
     assert!(dir.child("index").join("stemmer.txt").exists());
-    let found = succeeds(&pali(dir.path(), &["find", "dhammā"]));
+    let found = succeeds(&pali(dir.path(), &["find", "dhammassa"]));
     assert!(found.contains("mn1") && !found.contains("mn2"), "{found}");
     assert!(found.contains("Text UID") && found.contains("dhammo"), "{found}");
-    let found = succeeds(&pali(dir.path(), &["find", "nibba\u{0304}naṁ"]));
+    let found = succeeds(&pali(dir.path(), &["find", "nibba\u{0304}na"]));
     assert!(found.contains("mn2") && !found.contains("mn1"), "{found}");
     let found = succeeds(&pali(dir.path(), &["find", "xyzzy"]));
     assert!(!found.contains("mn"), "{found}");
@@ -367,9 +378,15 @@ fn test_a_rebuild_with_a_bad_stem_table_keeps_the_old_index() {
     let stems = stem_file(&dir, STEMS);
     let args = ["--texts", s(&texts), "--stem-file", s(&stems), "-s", "dictionary"];
     succeeds(&pali(dir.path(), &[&args[..], &["index"]].concat()));
-    stem_file(&dir, STEM_HEADER);
-    let error = fails(&pali(dir.path(), &[&args[..], &["index"]].concat()));
-    assert!(error.contains("run stem-table again"), "{error}");
+    // A table of the old three-column shape, as an upgrade would find, and an empty one.
+    for (contents, message) in [
+        ("term,dpd_stem,snowball_stem\ndhammo,dhamm,dhamm\n", "has no family column"),
+        (STEM_HEADER, "the stem table is empty"),
+    ] {
+        stem_file(&dir, contents);
+        let error = fails(&pali(dir.path(), &[&args[..], &["index"]].concat()));
+        assert!(error.contains(message) && error.contains("run stem-table again"), "{error}");
+    }
     // The table is refused before anything is removed, so the old index still answers.
     stem_file(&dir, STEMS);
     assert!(succeeds(&pali(dir.path(), &["--stem-file", s(&stems), "find", "dhammo"])).contains("mn1"));
@@ -395,7 +412,7 @@ fn test_find_refuses_another_stemmer() {
     let texts = texts(&dir, r#"{"mn1:1": "dhammo"}"#);
     let stems = stem_file(&dir, STEMS);
     succeeds(&pali(dir.path(), &["--texts", s(&texts), "index"]));
-    let error = fails(&pali(dir.path(), &["--stem-file", s(&stems), "-s", "dictionary", "find", "dhammo"]));
+    let error = fails(&pali(dir.path(), &["--stem-file", s(&stems), "-s", "hybrid", "find", "dhammo"]));
     assert!(error.contains("built with --stemmer snowball"), "{error}");
     // Naming the stemmer it was built with is fine.
     assert!(succeeds(&pali(dir.path(), &["-s", "snowball", "find", "dhammo"])).contains("mn1"));
@@ -406,10 +423,10 @@ fn test_find_refuses_an_index_whose_stem_table_changed() {
     let dir = TempDir::new().unwrap();
     let texts = texts(&dir, r#"{"mn1:1": "dhammo"}"#);
     let stems = stem_file(&dir, STEMS);
-    succeeds(&pali(dir.path(), &["--texts", s(&texts), "--stem-file", s(&stems), "-s", "dictionary", "index"]));
-    assert!(succeeds(&pali(dir.path(), &["--stem-file", s(&stems), "find", "dhammo"])).contains("mn1"));
-    stem_file(&dir, &format!("{STEMS}dhammassa,dhamma,dhamm\n"));
-    let error = fails(&pali(dir.path(), &["--stem-file", s(&stems), "find", "dhammo"]));
+    succeeds(&pali(dir.path(), &["--texts", s(&texts), "--stem-file", s(&stems), "-s", "hybrid", "index"]));
+    assert!(succeeds(&pali(dir.path(), &["--stem-file", s(&stems), "find", "dhammassa"])).contains("mn1"));
+    stem_file(&dir, &format!("{STEMS}dhammassa,dhamma,dhamm,,dhamma\n"));
+    let error = fails(&pali(dir.path(), &["--stem-file", s(&stems), "find", "dhammassa"]));
     assert!(error.contains("stem table have changed since this index was built"), "{error}");
 }
 

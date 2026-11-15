@@ -8,7 +8,7 @@
 
 mod algo_stemmer;
 pub mod analyzers;
-mod dict_stemmer;
+pub mod dict_stemmer;
 pub mod dpd;
 pub mod snowball;
 pub mod table;
@@ -16,6 +16,8 @@ pub mod table;
 mod tests;
 pub mod tokenizer;
 pub mod vocabulary;
+
+pub use algo_stemmer::AlgorithmicStemmer;
 
 const ANALYZER_SOURCES: [&str; 8] = [
     include_str!("snowball/pali.sbl"),
