@@ -24,6 +24,12 @@ impl From<Connection> for Dictionary {
 
 
 impl Dictionary {
+    /// Opens DPD read only.
+    #[allow(clippy::missing_errors_doc)]
+    pub fn open(path: &std::path::Path) -> Result<Self> {
+        Ok(Self::from(Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?))
+    }
+
     #[allow(clippy::missing_errors_doc)]
     pub fn stems(&self, term: &str) ->  Result<Vec<String>> {
         let mut stems: Vec<String> = Vec::new();

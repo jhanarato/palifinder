@@ -1,5 +1,5 @@
 use crate::texts::Segment;
-use crate::tokenizer::PaliTokenizer;
+use pali_analysis::tokenizer::PaliTokenizer;
 use counter::Counter;
 use tantivy::tokenizer::{LowerCaser, TextAnalyzer, TokenStream};
 

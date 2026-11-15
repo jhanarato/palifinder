@@ -1,4 +1,4 @@
-use crate::analyzers::AnalyzerConfig;
+use pali_analysis::analyzers::AnalyzerConfig;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 use tantivy::Index;

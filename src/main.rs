@@ -1,34 +1,23 @@
-mod algo_stemmer;
-pub mod analyzers;
 pub mod commands;
-mod dict_stemmer;
-pub mod dpd;
-pub mod snowball;
 mod stop_words;
-pub mod table;
-#[cfg(test)]
-pub mod tests;
 pub mod texts;
-pub mod tokenizer;
-pub mod vocabulary;
 pub mod index;
 mod writer;
 mod search;
 
-use crate::analyzers::AnalyzerConfig;
+use pali_analysis::analyzers::AnalyzerConfig;
 use crate::commands::Stemmer;
-use crate::dpd::Dictionary;
+use pali_analysis::dpd::Dictionary;
 use crate::index::{Location, PaliIndex};
 use crate::stop_words::most_frequent_words;
-use crate::table::StemTable;
+use pali_analysis::table::StemTable;
 use crate::texts::PaliFiles;
-use crate::tokenizer::PaliTokenizer;
-use crate::vocabulary::Vocabulary;
+use pali_analysis::tokenizer::PaliTokenizer;
+use pali_analysis::vocabulary::Vocabulary;
 use anyhow::Result;
 use clap::Parser;
 use commands::{Arguments, Command};
 use itertools::join;
-use rusqlite::{Connection, OpenFlags};
 use std::collections::BTreeSet;
 use std::fs::{create_dir_all, remove_dir_all};
 use std::path::{Path, PathBuf};
@@ -75,9 +64,8 @@ fn create_stem_table(
     let analyzer = TextAnalyzer::builder(PaliTokenizer::default())
         .filter(LowerCaser)
         .build();
-    let vocabulary = Vocabulary::new(files.segments(), analyzer);
-    let conn = Connection::open_with_flags(dictionary_path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
-    let dictionary = Dictionary::from(conn);
+    let vocabulary = Vocabulary::new(files.segments().map(|segment| segment.text), analyzer);
+    let dictionary = Dictionary::open(dictionary_path)?;
     let term_stems = StemTable::new(vocabulary, &dictionary);
     term_stems.save(stem_file_path)?;
     Ok(())
